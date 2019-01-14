@@ -1,0 +1,15 @@
+{
+  "name": "fft",
+  "version": "1.0.0",
+  "description": "",
+  "main": "fft.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "complex.js": "^2.0.11"
+  }
+}
