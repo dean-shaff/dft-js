@@ -2,17 +2,6 @@ const { performance } = require('perf_hooks')
 
 const Complex = require('complex.js')
 
-// const reverseBits = function (bits) {
-//     var x = new Uint32Array(1);
-//     x[0]=bits;
-//     x[0] = ((x[0] & 0x0000ffff) << 16) | ((x[0] & 0xffff0000) >>> 16)
-//     x[0] = ((x[0] & 0x55555555) << 1) | ((x[0] & 0xAAAAAAAA) >>> 1)
-//     x[0] = ((x[0] & 0x33333333) << 2) | ((x[0] & 0xCCCCCCCC) >>> 2)
-//     x[0] = ((x[0] & 0x0F0F0F0F) << 4) | ((x[0] & 0xF0F0F0F0) >>> 4)
-//     x[0] = ((x[0] & 0x00FF00FF) << 8) | ((x[0] & 0xFF00FF00) >>> 8)
-//     return x[0]
-// }
-
 const reverseBits = function (i) {
   var mask = 0x55555555; // 0101...
   i = ((i & mask) << 1) | ((i >> 1) & mask)
@@ -31,37 +20,36 @@ const fft_it = function (x, inverse) {
   inverse = inverse ? 1: -1
   var n = x.length
   var log_n = Math.log2(n)
-
   var res = new Array(n)
 
-  var t0 = performance.now()
-  for (var i=0; i<n; i++) {
-    reverseBits(i)
-  }
-  console.log((performance.now() - t0)/1000)
-
-  var t0 = performance.now()
   for (var i=0; i<n; i++){
-    var idx = parseInt(i.toString(2).padStart(log_n,'0').split('').reverse().join(''), 2)
+    // var idx = parseInt(i.toString(2).padStart(log_n,'0').split('').reverse().join(''), 2)
+    var idx = reverseBits(i) >> (32 - log_n)
+    idx = idx < 0 ? n+idx: idx
     res[i] = x[idx]
   }
-  console.log((performance.now() - t0)/1000)
-
+  
+  var incr, theta, theta_exp, omega, u, t
   for (var p = 1; p <= log_n; p++) {
-    var incr = 0x1 << p
-    var theta = (inverse*2*Math.PI)/incr
-    var theta_exp = new Complex([Math.cos(theta), Math.sin(theta)])
+    incr = 0x1 << p
+    theta = (inverse*2*Math.PI)/incr
+    theta_exp = new Complex([Math.cos(theta), Math.sin(theta)])
     // console.log(`theta_exp: ${theta_exp}`)
     for (var offset = 0; offset < n; offset += incr) {
-      var omega = Complex.ONE
+      omega = Complex.ONE
       for (var k = 0; k < incr/2; k++) {
-        var u = res[offset + k]
-        var t = res[offset + k + incr/2].mul(omega)
+        u = res[offset + k]
+        t = res[offset + k + incr/2].mul(omega)
         omega = omega.mul(theta_exp)
         // console.log(`k: ${k}, omega: ${omega}`)
         res[offset + k] = u.add(t)
         res[offset + k + incr/2] = u.sub(t)
       }
+    }
+  }
+  if (inverse == 1) {
+    for (var i=0; i<n; i++) {
+      res[i] = res[i].div(n)
     }
   }
   return res
@@ -163,26 +151,30 @@ function main () {
     x[i] = new Complex([i, i])
   }
   var t0
+  var delta0
+  var delta1
   var k_rec
   var k_iter
   var k_inv
-  var nIter = 10
-  // console.log(x)
-  // var t0 = performance.now()
-  // var k = DFT(x)
-  // console.log(`DFT: ${(performance.now() - t0)/1000}`)
+  var nIter = 100
   var plan = new FFT(n)
   t0 = performance.now()
   for (var i=0; i<nIter; i++) {
     k_rec = plan.forward(x)
   }
-  console.log(`FFT: ${(performance.now() - t0)/1000/nIter}`)
+  delta0 = performance.now() - t0
+  console.log(`FFT: ${delta0/1000/nIter}`)
   t0 = performance.now()
   for (var i=0; i<nIter; i++) {
     k_iter = fft_it(x, false)
   }
-  console.log(`FFT: ${(performance.now() - t0)/1000/nIter}`)
-
+  delta1 = performance.now() - t0
+  console.log(`FFT: ${delta1/1000/nIter}`)
+  console.log(`iterative is ${delta0 / delta1} times faster`)
+  k_inv = fft_it(k_iter, true)
+  // console.log(k_inv)
 }
 
 main ()
+
+exports.reverseBits = reverseBits
