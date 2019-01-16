@@ -13,7 +13,8 @@ def main():
     n = [8, 32, 2048]
     res = {}
     for val in n:
-        x = np.random.rand(val) + 1j*np.random.rand(val)
+        # x = np.random.rand(val) + 1j*np.random.rand(val)
+        x = np.arange(val) + 1j*np.arange(val)
         f = np.fft.fft(x)
         res[val] = {
             'in': [[v.real, v.imag] for v in x],

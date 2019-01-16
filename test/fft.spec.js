@@ -62,19 +62,24 @@ describe('test wasm', function () {
 	it('should calculate the FFT', function () {
 		var n = 8
 		var p = Math.log2(n)
-		var input = testVectors[n]['in'].flat()
-		var expected = testVectors[n]['out'].flat()
+		var input = testVectors[n]['in']
+		var expected = testVectors[n]['out']
 		const memory = new Float64Array(wasm.memory.buffer, 0, 4*n) // twice as much space for result, 2 for complex
 		var permuted = new Array(2*n)
 		for (var i=0; i<n; i++) {
-			memory[2*i] = input[2*i]
-			memory[2*i + 1] = input[2*i + 1]
+			memory[2*i] = input[i][0]
+			memory[2*i + 1] = input[i][1]
 			var reversedIdx = reverseBits(i) >> (32 - p)
 			reversedIdx = reversedIdx < 0 ? n+reversedIdx: reversedIdx
-			permuted[2*i] = input[2*reversedIdx]
-			permuted[2*i + 1] = input[2*reversedIdx + 1]
+			permuted[2*i] = input[reversedIdx][0]
+			permuted[2*i + 1] = input[reversedIdx][1]
 		}
 		wasm.fft(n, p, 0)
+		console.log('\n')
+		for (var i=0; i<n; i++) {
+			console.log(permuted[2*i], memory[2*i + 2*n])
+			console.log(permuted[2*i + 1], memory[2*i + 1 + 2*n])
+		}
 	})
 })
 
