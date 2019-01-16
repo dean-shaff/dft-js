@@ -1,14 +1,27 @@
+const fs = require('fs')
 const path = require('path')
 const assert = require('assert')
 const { performance } = require('perf_hooks')
 
+const Complex = require('complex.js')
+
 const { build, instantiate } = require('./../scripts/wasm_util.js')
+const { fft, reverseBits } = require('./../src/fft.js')
 
 const topDir = path.dirname(__dirname)
 const srcDir = path.join(topDir, 'src')
 const buildDir = path.join(topDir, 'build')
 const watPath = path.join(srcDir, 'fft.wat')
 const wasmPath = path.join(buildDir, 'fft.wasm')
+const dataDir = path.join(__dirname, 'data')
+
+var testVectors
+var thresh = 1e-8
+
+before(function () {
+	var testVecFilePath = path.join(dataDir, 'test_vectors.json')
+	testVectors = JSON.parse(fs.readFileSync(testVecFilePath))
+})
 
 describe('test wasm', function () {
 	var wasm
@@ -18,36 +31,85 @@ describe('test wasm', function () {
 	beforeEach(async function () {
 		wasm = await instantiate(wasmPath)
 	})
-	it('should sum two numbers', function () {
-		var res = wasm.sum(7, 6)
-		assert.equal(res, 13)
+	it('should calculate the exponent', function () {
+		var x = Math.random()
+		var resExpected = Math.exp(x)
+		var resTest = wasm.exp(x)
+		assert.equal(resExpected, resTest)
 	})
-	it('should sum up an array', function () {
-		var n = 10000
-		const memory = new Uint32Array(wasm.memory.buffer, 0, n)
-		// memory.fill(1)
-		for (var i=0; i<n; i++){
-			memory[i] = i
+	it('should calculate the bit reversal of the integer', function () {
+		var n = 2048
+		var expected
+		var test
+		for (var i=0; i<n; i++) {
+			expected = reverseBits(i)
+			test = wasm.reverseBits(i)
+			assert.equal(expected, test)
 		}
-		// var res = parseInt(wasm.sumArray(n),2)
-		var nIter = 1000
-		var t0 = performance.now()
-		for (var i=0; i<nIter; i++) {
-			wasm.sumArray(n)
-		}
-		var delta = performance.now() - t0
-		console.log(`${delta/1000/nIter} per loop, ${delta/1000} in total`)
-		const reducer = (accumulator, currentValue) => accumulator + currentValue
-		t0 = performance.now()
-		for (var i=0; i<nIter; i++) {
-			memory.reduce(reducer)
-		}
-		var delta1 = performance.now() - t0
-		console.log(`${delta1/1000/nIter} per loop, ${delta1/1000} in total`)
-		console.log(`wasm verison ${delta1 / delta}x faster`)
-		var res = wasm.sumArray(n)
-		console.log(`wasm.sumArray: ${res}`)
-		// assert.equal(res, 10)
 	})
+	it('should shift reversed bits', function () {
+		var n = 2048
+		var p = Math.log2(n)
+		var expected
+		var test
+		for (var i=0; i<n; i++) {
+			expected = reverseBits(i) >> (32 - p)
+			expected = expected < 0 ? n+expected: expected
+			test = wasm.shiftBit(wasm.reverseBits(i), p)
+			assert.equal(expected, test)
+		}
+	})
+	it('should calculate the FFT', function () {
+		var n = 8
+		var p = Math.log2(n)
+		var input = testVectors[n]['in'].flat()
+		var expected = testVectors[n]['out'].flat()
+		const memory = new Float64Array(wasm.memory.buffer, 0, 4*n) // twice as much space for result, 2 for complex
+		var permuted = new Array(2*n)
+		for (var i=0; i<n; i++) {
+			memory[2*i] = input[2*i]
+			memory[2*i + 1] = input[2*i + 1]
+			var reversedIdx = reverseBits(i) >> (32 - p)
+			reversedIdx = reversedIdx < 0 ? n+reversedIdx: reversedIdx
+			permuted[2*i] = input[2*reversedIdx]
+			permuted[2*i + 1] = input[2*reversedIdx + 1]
+		}
+		wasm.fft(n, p, 0)
+	})
+})
 
+
+describe('fft', function () {
+
+	it('should produce the same results as test vectors', function () {
+		Object.keys(testVectors).forEach((n) => {
+			var input = testVectors[n]['in']
+			var expected = testVectors[n]['out']
+			var inputComplex = input.map((c) => {
+				return new Complex([c[0], c[1]])
+			})
+			var expectedComplex = expected.map((c) => {
+				return new Complex([c[0], c[1]])
+			})
+			var testFFT = fft(inputComplex, false)
+			for (var i=0; i<n; i++) {
+				var delta = testFFT[i].sub(expectedComplex[i])
+				assert.equal(delta.abs() < thresh, true)
+			}
+		})
+	})
+	it('inverse should produce original input', function () {
+		Object.keys(testVectors).forEach((n) => {
+			var input = testVectors[n]['in']
+			var inputComplex = input.map((c) => {
+				return new Complex([c[0], c[1]])
+			})
+			var forwardFFT = fft(inputComplex, false)
+			var backwardFFT = fft(forwardFFT, true)
+			for (var i=0; i<n; i++) {
+				var delta = backwardFFT[i].sub(inputComplex[i])
+				assert.equal(delta.abs() < thresh, true)
+			}
+		})
+	})
 })

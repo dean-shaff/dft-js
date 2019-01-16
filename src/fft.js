@@ -16,7 +16,7 @@ const reverseBits = function (i) {
   return i
 }
 
-const fft_it = function (x, inverse) {
+const fft = function (x, inverse) {
   inverse = inverse ? 1: -1
   var n = x.length
   var log_n = Math.log2(n)
@@ -73,7 +73,6 @@ const DFT = function (x) {
   }
   return k
 }
-
 
 const FFT = function (n) {
 
@@ -143,38 +142,5 @@ const FFT = function (n) {
 
 }
 
-
-function main () {
-  n = 128
-  x = new Array(n)
-  for (var i=0; i<n; i++) {
-    x[i] = new Complex([i, i])
-  }
-  var t0
-  var delta0
-  var delta1
-  var k_rec
-  var k_iter
-  var k_inv
-  var nIter = n**2
-  var plan = new FFT(n)
-  t0 = performance.now()
-  for (var i=0; i<nIter; i++) {
-    k_rec = plan.forward(x)
-  }
-  delta0 = performance.now() - t0
-  console.log(`FFT: ${delta0/1000/nIter}`)
-  t0 = performance.now()
-  for (var i=0; i<nIter; i++) {
-    k_iter = fft_it(x, false)
-  }
-  delta1 = performance.now() - t0
-  console.log(`FFT: ${delta1/1000/nIter}`)
-  console.log(`iterative is ${delta0 / delta1} times faster`)
-  k_inv = fft_it(k_iter, true)
-  // console.log(k_inv)
-}
-
-main ()
-
 exports.reverseBits = reverseBits
+exports.fft = fft

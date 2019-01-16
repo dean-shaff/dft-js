@@ -18,6 +18,9 @@ const instantiate = async function (in_file_path) {
 	var instance = await WebAssembly.instantiate(module, {
 		console: {
 			log: (x, y) => console.log(x, y)
+		},
+		math: {
+			exp: (x) => Math.exp(x)
 		}
 	})
 	return instance.exports
