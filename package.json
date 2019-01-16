@@ -4,12 +4,16 @@
   "description": "",
   "main": "fft.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "./node_modules/.bin/mocha ./test/*.spec.js",
+    "compile": "node compile_wasm.js",
+    "run": "node run_wasm.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "complex.js": "^2.0.11"
+    "complex.js": "^2.0.11",
+    "mocha": "^5.2.0",
+    "wabt": "^1.0.6"
   }
 }
