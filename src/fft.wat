@@ -57,7 +57,7 @@
             (i32.load (get_local $i))
           )
         )
-        (call $log (get_local $i) (i32.load (get_local $i)))
+        ;; (call $log (get_local $i) (i32.load (get_local $i)))
         ;; (set_local $sum (i32.add (get_local $i) (get_local $sum)))
         (set_local $i (call $increment (get_local $i)))
         (br_if 1 (i32.eq (get_local $i) (get_local $end))) ;; break if i is equal to n
