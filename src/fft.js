@@ -21,12 +21,27 @@ const shiftBit = function (x, n) {
 }
 
 const fftPermute = function (x, res) {
+  // var t0 = performance.now()
+  // var res = new Array(n)
   var n = x.length
   var log_n = Math.log2(n)
+  var idx
   for (var i=0; i<n; i++){
-    // var idx = parseInt(i.toString(2).padStart(log_n,'0').split('').reverse().join(''), 2)
-    var idx = shiftBit(reverseBits(i), log_n)
+    idx = shiftBit(reverseBits(i), log_n)
     res[i] = x[idx]
+  }
+  // console.log(`fftPermute: ${(performance.now() - t0) / 1000}`)
+  // return res
+}
+
+const fftPermuteComplex = function (x, res) {
+  var n = x.length / 2
+  var log_n = Math.log2(n)
+  var idx = 0
+  for (var i=0; i<n; i++) {
+    idx = shiftBit(reverseBits(i), log_n)
+    res[2*i] = x[2*idx]
+    res[2*i + 1] = x[2*idx + 1]
   }
 }
 
@@ -154,4 +169,5 @@ const FFT = function (n) {
 exports.shiftBit = shiftBit
 exports.reverseBits = reverseBits
 exports.fftPermute = fftPermute
+exports.fftPermuteComplex = fftPermuteComplex
 exports.fft = fft

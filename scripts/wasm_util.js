@@ -2,6 +2,7 @@ const { readFileSync, writeFileSync } = require("fs");
 const path = require("path");
 
 const wabt = require("wabt")();
+const binaryen = require('binaryen')
 
 const build = function (in_file_path, out_file_path) {
 	var wasmModule = wabt.parseWat(
@@ -11,6 +12,17 @@ const build = function (in_file_path, out_file_path) {
 	var { buffer } = wasmModule.toBinary({})
 	writeFileSync(out_file_path, Buffer.from(buffer))
 }
+
+const buildBinaryen = function (in_file_path, out_file_path) {
+	var contents = readFileSync(in_file_path, 'utf8')
+	var wasmModule = binaryen.parseText(contents)
+	console.log(wasmModule)
+	console.log(wasmModule.getOptimizeLevel())
+	wasmModule.optimize()
+	var buffer = wasmModule.emitBinary()
+	writeFileSync(out_file_path, Buffer.from(buffer))
+}
+
 
 const instantiate = async function (in_file_path) {
 	var buffer = readFileSync(in_file_path)
@@ -27,5 +39,6 @@ const instantiate = async function (in_file_path) {
 	return instance.exports
 }
 
+exports.buildBinaryen = buildBinaryen
 exports.build = build
 exports.instantiate = instantiate
