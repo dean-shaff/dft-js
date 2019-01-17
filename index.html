@@ -1,0 +1,32 @@
+<!doctype html>
+
+<html>
+
+  <head>
+    <meta charset="utf-8">
+    <title>WASM test</title>
+  </head>
+
+  <body>
+    <script>
+      var importObject = {
+        console: {
+          log: (x, y) => console.log(x, y)
+        },
+        math: {
+          exp: (x) => Math.exp(x),
+          log2: (x) => Math.log2(x)
+        }
+      }
+      fetch('./build/fft.wasm').then(response =>
+        response.arrayBuffer()
+      ).then(bytes =>
+        WebAssembly.instantiate(bytes, importObject)
+      ).then(wasm => {
+        wasm = wasm.instance.exports
+        console.log(wasm.reverseBits(0))
+      })
+    </script>
+  </body>
+
+</html>

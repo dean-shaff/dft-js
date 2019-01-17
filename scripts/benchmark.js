@@ -22,10 +22,10 @@ function loadTestVectors () {
 
 const obs = new PerformanceObserver((items) => {
   var entries = items.getEntries()
-  console.log(entries[0].name, entries[0].duration);
-  performance.clearMarks();
-});
-obs.observe({ entryTypes: ['measure'] });
+  console.log(entries[0].name, entries[0].duration)
+  performance.clearMarks()
+})
+obs.observe({ entryTypes: ['measure'] })
 
 async function fftWasmBenchmark (nIter) {
 	build(watPath, wasmPath)
@@ -48,50 +48,35 @@ async function fftWasmBenchmark (nIter) {
     var p = Math.log2(n)
     performance.mark('wasm.fftPermute.start')
     for (var i=0; i<nIter; i++) {
-      // var t1 = performance.now()
       wasm.fftPermute(n, p)
-      // var delta1 = performance.now() - t1
-      // console.log(`loop wasm ${i}: ${delta1 / 1000}`)
     }
     performance.mark('wasm.fftPermute.end')
     performance.measure('wasm.fftPermute', 'wasm.fftPermute.start', 'wasm.fftPermute.end')
-    // console.log(measured)
-    // var delta = performance.now() - t0
-    // console.log(`For n=${n}, wasm.fftPermute took ${delta / 1000 / nIter} per loop`)
 
-    // t0 = performance.now()
     performance.mark('js.fftPermute.start')
     for (var i=0; i<nIter; i++) {
-      // var t1 = performance.now()
       fftPermute(inputComplex, res)
-      // var delta1 = performance.now() - t1
-      // console.log(`loop js ${i}: ${delta1 / 1000}`)
     }
     performance.mark('js.fftPermute.end')
     performance.measure('js.fftPermute', 'js.fftPermute.start', 'js.fftPermute.end')
-    // var deltaJs = performance.now() - t0
-    // console.log(`For n=${n}, fftPermute took ${deltaJs / 1000 / nIter} per loop`)
-    // console.log(`wasm.fftPermute ${deltaJs / delta}x faster`)
 
+    performance.mark('wasm.shiftBit.start')
+    for (var i=0; i<n; i++) {
+      wasm.shiftBit(wasm.reverseBits(i))
+    }
+    performance.mark('wasm.shiftBit.end')
+    performance.measure('wasm.shiftBit', 'wasm.shiftBit.start', 'wasm.shiftBit.end')
 
-    // t0 = performance.now()
-    // for (var i=0; i<n; i++) {
-    //   wasm.shiftBit(wasm.reverseBits(i))
-    // }
-    // delta = performance.now() - t0
-    // console.log(`For n=${n}, wasm.shiftBit took ${delta / 1000 / (n)} per loop`)
-    //
-    // t0 = performance.now()
-    // for (var i=0; i<n; i++) {
-    //   shiftBit(reverseBits(i))
-    // }
-    // deltaJs = performance.now() - t0
-    // console.log(`For n=${n}, shiftBit took ${deltaJs / 1000 / (n)} per loop`)
-    // console.log(`wasm.shiftBit ${deltaJs / delta}x faster\n\n`)
+    performance.mark('js.shiftBit.start')
+    for (var i=0; i<n; i++) {
+      shiftBit(reverseBits(i))
+    }
+    performance.mark('js.shiftBit.end')
+    performance.measure('js.shiftBit', 'js.shiftBit.start', 'js.shiftBit.end')
   })
 }
 
-fftWasmBenchmark(1)
+fftWasmBenchmark(10)
 // var nIter = 1000
 // var t0 = performance.now()
 // for (var i=0; i<nIter; i++) {
