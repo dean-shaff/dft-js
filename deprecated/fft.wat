@@ -1,9 +1,10 @@
 (module
 
-  (import "console" "log" (func $log_i32 (param i32 i32)))
-  (import "console" "log" (func $log_f64 (param f64 f64)))
+  (import "console" "log" (func $log_i32 (param i32) (param i32)))
+  (import "console" "log" (func $log_f64 (param f64) (param f64)))
   (import "math" "exp" (func $exp (param f64) (result f64)))
   (import "math" "log2" (func $log2_i32 (param i32) (result i32)))
+  ;; (memory (import "js" "mem") 1)
 
   (memory (export "memory") 100)
 
@@ -29,6 +30,95 @@
       (get_local $x)
   )
 
+  (func $shiftReverse (param $x i32) (param $n i32) (result i32)
+    (set_local $x
+        (i32.or
+            (i32.shl
+                (i32.and
+                    (get_local $x)
+                    (i32.const 0x55555555))
+                (i32.const 1)
+            )
+            (i32.and
+                (i32.shr_s
+                    (get_local $x)
+                    (i32.const 1)
+                )
+                (i32.const 0x55555555)
+            )
+        ))
+    (set_local $x
+        (i32.or
+            (i32.shl
+                (i32.and
+                    (get_local $x)
+                    (i32.const 0x33333333))
+                (i32.const 2)
+            )
+            (i32.and
+                (i32.shr_s
+                    (get_local $x)
+                    (i32.const 2)
+                )
+                (i32.const 0x33333333)
+            )
+        ))
+    (set_local $x
+        (i32.or
+            (i32.shl
+                (i32.and
+                    (get_local $x)
+                    (i32.const 0x0f0f0f0f))
+                (i32.const 4)
+            )
+            (i32.and
+                (i32.shr_s
+                    (get_local $x)
+                    (i32.const 4)
+                )
+                (i32.const 0x0f0f0f0f)
+            )
+        ))
+    (set_local $x
+        (i32.or
+            (i32.shl
+                (i32.and
+                    (get_local $x)
+                    (i32.const 0x00ff00ff))
+                (i32.const 8)
+            )
+            (i32.and
+                (i32.shr_s
+                    (get_local $x)
+                    (i32.const 8)
+                )
+                (i32.const 0x00ff00ff)
+            )
+        ))
+
+    (set_local $x
+        (i32.or
+            (i32.shl
+                (get_local $x)
+                (i32.const 16)
+            )
+            (i32.shr_s
+                (get_local $x)
+                (i32.const 16)
+            )
+        ))
+
+    (set_local $x
+        (i32.shr_u
+            (get_local $x)
+            (i32.sub
+                (i32.const 32)
+                (get_local $n)
+            )
+        )
+    )
+    (get_local $x)
+  )
 
   (func $reverseBits (param $x i32) (result i32)
 
@@ -88,22 +178,23 @@
     (get_local $bit)
   )
 
-  (func $shiftReverse (param $bit i32) (param $n i32) (result i32)
-    (set_local $bit
-      (call $shiftBit
-        (call $reverseBits
-          (get_local $bit)
-        )
-        (get_local $n)
-      )
-    )
-    (get_local $bit)
-  )
+  ;; (func $shiftReverse (param $bit i32) (param $n i32) (result i32)
+  ;;   (set_local $bit
+  ;;     (call $shiftBit
+  ;;       (call $reverseBits
+  ;;         (get_local $bit)
+  ;;       )
+  ;;       (get_local $n)
+  ;;     )
+  ;;   )
+  ;;   (get_local $bit)
+  ;; )
 
   (func $fftPermute (param $n i32) (param $p i32)
     (local $bytesPerComplex i32)
     (local $bytesPerDouble i32)
     (local $nComplex i32)
+    ;; (local $idxByte i32)
     (local $idx i32)
     (local $end i32)
     (local $shiftedIdx i32)
@@ -125,22 +216,22 @@
     ;; initialize
     (block
         (loop
-            ;; (set_local $shiftedIdxByte
-            ;;   (i32.mul
-            ;;     (call $shiftReverse
-            ;;       (get_local $idx)
-            ;;       (get_local $p))
-            ;;     (get_local $bytesPerComplex)))
-
-            (set_local $shiftedIdx
-                (call $shiftBit
-                    (call $reverseBits (get_local $idx))
-                    (get_local $p)))
-
             (set_local $shiftedIdxByte
-                (i32.mul
-                    (get_local $shiftedIdx)
-                    (get_local $bytesPerComplex)))
+              (i32.mul
+                (call $shiftReverse
+                  (get_local $idx)
+                  (get_local $p))
+                (get_local $bytesPerComplex)))
+
+            ;; (set_local $shiftedIdx
+            ;;     (call $shiftBit
+            ;;         (call $reverseBits (get_local $idx))
+            ;;         (get_local $p)))
+            ;;
+            ;; (set_local $shiftedIdxByte
+            ;;     (i32.mul
+            ;;         (get_local $shiftedIdx)
+            ;;         (get_local $bytesPerComplex)))
 
             (set_local $offsetIdx
                 (i32.add
@@ -171,6 +262,7 @@
                     (get_local $shiftedIdxByte)))
 
             (set_local $idx (i32.add (get_local $idx) (i32.const 1)))
+            ;; (set_local $idxByte (i32.add (get_local $idxByte) (get_local $bytesPerComplex)))
             (br_if 1 (i32.eq (get_local $idx) (get_local $n)))
             (br 0)
         )

@@ -26,7 +26,7 @@ before(function () {
 describe('fft wasm', function () {
 	var wasm
 	before(function () {
-		build(watPath, wasmPath)
+		// build(watPath, wasmPath)
 	})
 	beforeEach(async function () {
 		wasm = await instantiate(wasmPath)
@@ -79,6 +79,13 @@ describe('fft wasm', function () {
 			assert.equal(permuted[2*i], memory[2*i + 2*n])
 			assert.equal(permuted[2*i + 1], memory[2*i + 1 + 2*n])
 		}
+	})
+	it('should compute fft', function () {
+		var n = 8
+		const memory = new Float64Array(wasm.memory.buffer, 0, 4*n) // twice as much space for result, 2 for complex
+		var t0 = performance.now()
+		wasm.fft(n, -1)
+		console.log(`Took ${(performance.now() - t0)} to compute FFT`)
 	})
 })
 

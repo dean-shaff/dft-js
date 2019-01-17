@@ -1,5 +1,6 @@
 const { readFileSync, writeFileSync } = require("fs");
 const path = require("path");
+const { performance } = require('perf_hooks')
 
 const wabt = require("wabt")();
 const binaryen = require('binaryen')
@@ -29,11 +30,17 @@ const instantiate = async function (in_file_path) {
 	var module = await WebAssembly.compile(buffer)
 	var instance = await WebAssembly.instantiate(module, {
 		console: {
-			log: (x, y) => console.log(x, y)
+			log: (x) => console.log(x)
+		},
+		performance: {
+			now: () => performance.now()
 		},
 		math: {
 			exp: (x) => Math.exp(x),
-			log2: (x) => Math.log2(x)
+			sin: (x) => Math.sin(x),
+			cos: (x) => Math.cos(x),
+			log2: (x) => Math.log2(x),
+			PI: Math.PI,
 		}
 	})
 	return instance.exports

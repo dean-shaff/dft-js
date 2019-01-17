@@ -4,9 +4,12 @@
   "description": "",
   "main": "fft.js",
   "scripts": {
+    "compile": "wasm-as src/fft.wast -o build/fft.wasm",
+    "pretest": "npm run compile",
     "test": "./node_modules/.bin/mocha ./test/*.spec.js",
-    "compile": "node compile_wasm.js",
-    "run": "node run_wasm.js"
+    "prebench": "npm run compile",
+    "bench": "node ./scripts/benchmark.js",
+    "convert": "node ./scripts/wast2wat.js ./src/fft.wast"
   },
   "keywords": [],
   "author": "",

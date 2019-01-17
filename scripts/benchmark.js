@@ -36,7 +36,7 @@ async function fftWasmBenchmark (nIter) {
   // var memory = new Float64Array(
   //   wasm.memory.buffer, 0, 4*Math.max(...sizes))
   var memory
-  sizes = [32768]
+  sizes = [8192]
   sizes.forEach((n) => {
     var input = testVectors[n]['in']
     var inputComplex = input.map((c) => {
