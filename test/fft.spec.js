@@ -6,7 +6,7 @@ const { performance } = require('perf_hooks')
 const Complex = require('complex.js')
 
 const { build, instantiate } = require('./../scripts/wasm_util.js')
-const { fft, reverseBits } = require('./../src/fft.js')
+const { fft, reverseBits, shiftBit } = require('./../src/fft.js')
 
 const topDir = path.dirname(__dirname)
 const srcDir = path.join(topDir, 'src')
@@ -16,14 +16,14 @@ const wasmPath = path.join(buildDir, 'fft.wasm')
 const dataDir = path.join(__dirname, 'data')
 
 var testVectors
-var thresh = 1e-8
+var thresh = 1e-3
 
 before(function () {
 	var testVecFilePath = path.join(dataDir, 'test_vectors.json')
 	testVectors = JSON.parse(fs.readFileSync(testVecFilePath))
 })
 
-describe('test wasm', function () {
+describe('fft wasm', function () {
 	var wasm
 	before(function () {
 		build(watPath, wasmPath)
@@ -53,13 +53,12 @@ describe('test wasm', function () {
 		var expected
 		var test
 		for (var i=0; i<n; i++) {
-			expected = reverseBits(i) >> (32 - p)
-			expected = expected < 0 ? n+expected: expected
+			expected = shiftBit(reverseBits(i), p)
 			test = wasm.shiftBit(wasm.reverseBits(i), p)
 			assert.equal(expected, test)
 		}
 	})
-	it('should calculate the FFT', function () {
+	it('should permute input data', function () {
 		var n = 8
 		var p = Math.log2(n)
 		var input = testVectors[n]['in']
@@ -74,11 +73,11 @@ describe('test wasm', function () {
 			permuted[2*i] = input[reversedIdx][0]
 			permuted[2*i + 1] = input[reversedIdx][1]
 		}
-		wasm.fft(n, p, 0)
-		console.log('\n')
+		wasm.fftPermute(n, p, 0)
+		// console.log('\n')
 		for (var i=0; i<n; i++) {
-			console.log(permuted[2*i], memory[2*i + 2*n])
-			console.log(permuted[2*i + 1], memory[2*i + 1 + 2*n])
+			assert.equal(permuted[2*i], memory[2*i + 2*n])
+			assert.equal(permuted[2*i + 1], memory[2*i + 1 + 2*n])
 		}
 	})
 })

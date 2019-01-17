@@ -10,7 +10,7 @@ test_data_dir = os.path.join(cur_dir, 'test', 'data')
 def main():
     file_name = 'test_vectors.json'
     file_path = os.path.join(test_data_dir, file_name)
-    n = [8, 32, 2048]
+    n = [8, 32, 2048, 8192, 32768, 131072]
     res = {}
     for val in n:
         # x = np.random.rand(val) + 1j*np.random.rand(val)

@@ -16,18 +16,27 @@ const reverseBits = function (i) {
   return i
 }
 
+const shiftBit = function (x, n) {
+  return x >>> (32 - n)
+}
+
+const fftPermute = function (x, res) {
+  var n = x.length
+  var log_n = Math.log2(n)
+  for (var i=0; i<n; i++){
+    // var idx = parseInt(i.toString(2).padStart(log_n,'0').split('').reverse().join(''), 2)
+    var idx = shiftBit(reverseBits(i), log_n)
+    res[i] = x[idx]
+  }
+}
+
 const fft = function (x, inverse) {
   inverse = inverse ? 1: -1
   var n = x.length
   var log_n = Math.log2(n)
   var res = new Array(n)
 
-  for (var i=0; i<n; i++){
-    // var idx = parseInt(i.toString(2).padStart(log_n,'0').split('').reverse().join(''), 2)
-    var idx = reverseBits(i) >> (32 - log_n)
-    idx = idx < 0 ? n+idx: idx
-    res[i] = x[idx]
-  }
+  fftPermute(x, res)
 
   var incr, theta, theta_exp, omega, u, t
   for (var p = 1; p <= log_n; p++) {
@@ -142,5 +151,7 @@ const FFT = function (n) {
 
 }
 
+exports.shiftBit = shiftBit
 exports.reverseBits = reverseBits
+exports.fftPermute = fftPermute
 exports.fft = fft
