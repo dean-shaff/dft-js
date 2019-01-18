@@ -11,8 +11,12 @@ const topDir = path.dirname(__dirname)
 const srcDir = path.join(topDir, 'src')
 const buildDir = path.join(topDir, 'build')
 const watPath = path.join(srcDir, 'fft.wast')
-const wasmPath = path.join(buildDir, 'fft.opt.wasm')
+const wasmPath = path.join(buildDir, 'fft.wasm')
 const dataDir = path.join(topDir, 'test', 'data')
+
+function now() {
+  return performance.now()
+}
 
 function loadTestVectors () {
   var testVecFilePath = path.join(dataDir, 'test_vectors.json')
@@ -28,69 +32,105 @@ const obs = new PerformanceObserver((items) => {
 obs.observe({ entryTypes: ['measure'] })
 
 async function fftWasmBenchmark (nIter) {
-	// buildBinaryen(watPath, wasmPath)
-	var wasm = await instantiate(wasmPath)
-
+  var wasm = await instantiate(wasmPath)
   var testVectors = loadTestVectors()
   var sizes = Object.keys(testVectors)
-  // var memory = new Float64Array(
-  //   wasm.memory.buffer, 0, 4*Math.max(...sizes))
-  var memory
-  sizes = [8192]
-  sizes.forEach((n) => {
+  // sizes = [8192]
+  sizes.forEach((n)=>{
     var input = testVectors[n]['in']
-    var inputComplex = input.map((c) => {
+    var inputComplex = input.map((c)=>{
       return new Complex([c[0], c[1]])
     })
-    var inputComplex = input.reduce(
-      ( accumulator, currentValue ) => accumulator.concat(currentValue),
-      []
-    )
-    var res = new Array(2*n)
-    // var res = new Array(n)
-    // var res = input.map(()=>{
-    //   return Complex.ZERO
-    // })
-    memory = new Float64Array(
-      wasm.memory.buffer, 0, 4*n)
 
-    var p = Math.log2(n)
-    wasm.fftPermute(n, p)
-    performance.mark('wasm.fftPermute.start')
-    for (var i=0; i<nIter; i++) {
-      // var t0 = performance.now()
-      wasm.fftPermute(n, p)
-      // console.log(`${(performance.now() - t0) / 1000}`)
+    var t0 = now()
+    for (i=0; i<nIter; i++) {
+      fft(inputComplex, false)
     }
-    performance.mark('wasm.fftPermute.end')
-    performance.measure('wasm.fftPermute', 'wasm.fftPermute.start', 'wasm.fftPermute.end')
+    var deltaJs = (now() - t0)/1000
+    console.log(`JS fft: ${deltaJs}, ${deltaJs/nIter} per loop`)
 
-    fftPermuteComplex(inputComplex, new Array(2*n))
-    performance.mark('js.fftPermute.start')
-    for (var i=0; i<nIter; i++) {
-      // res = new Array(2*n)
-      fftPermuteComplex(inputComplex, res)
-    }
-    performance.mark('js.fftPermute.end')
-    performance.measure('js.fftPermute', 'js.fftPermute.start', 'js.fftPermute.end')
-
-    performance.mark('wasm.shiftBit.start')
+    const memory = new Float64Array(wasm.memory.buffer, 0, 4*n)
     for (var i=0; i<n; i++) {
-      wasm.shiftReverse(i)
+      memory[2*i] = input[i][0]
+      memory[2*i + 1] = input[i][1]
     }
-    performance.mark('wasm.shiftBit.end')
-    performance.measure('wasm.shiftBit', 'wasm.shiftBit.start', 'wasm.shiftBit.end')
 
-    performance.mark('js.shiftBit.start')
-    for (var i=0; i<n; i++) {
-      shiftBit(reverseBits(i))
+    var t0 = now()
+    for (i=0; i<nIter; i++) {
+      wasm.fft(n, -1)
     }
-    performance.mark('js.shiftBit.end')
-    performance.measure('js.shiftBit', 'js.shiftBit.start', 'js.shiftBit.end')
+    var deltaWasm = (now() - t0)/1000
+    console.log(`wasm fft: ${deltaWasm}, ${deltaWasm/nIter} per loop`)
+    console.log(`wasm.fft is ${deltaJs/deltaWasm}x faster`)
+
+
   })
 }
 
-fftWasmBenchmark(1000)
+// async function fftWasmBenchmark (nIter) {
+// 	// buildBinaryen(watPath, wasmPath)
+// 	var wasm = await instantiate(wasmPath)
+//
+//   var testVectors = loadTestVectors()
+//   var sizes = Object.keys(testVectors)
+//   // var memory = new Float64Array(
+//   //   wasm.memory.buffer, 0, 4*Math.max(...sizes))
+//   var memory
+//   sizes = [8192]
+//   sizes.forEach((n) => {
+//     var input = testVectors[n]['in']
+//     var inputComplex = input.map((c) => {
+//       return new Complex([c[0], c[1]])
+//     })
+//     var inputComplex = input.reduce(
+//       ( accumulator, currentValue ) => accumulator.concat(currentValue),
+//       []
+//     )
+//     var res = new Array(2*n)
+//     // var res = new Array(n)
+//     // var res = input.map(()=>{
+//     //   return Complex.ZERO
+//     // })
+//     memory = new Float64Array(
+//       wasm.memory.buffer, 0, 4*n)
+//
+//     var p = Math.log2(n)
+//     wasm.fftPermute(n, p)
+//     performance.mark('wasm.fftPermute.start')
+//     for (var i=0; i<nIter; i++) {
+//       // var t0 = performance.now()
+//       wasm.fftPermute(n, p)
+//       // console.log(`${(performance.now() - t0) / 1000}`)
+//     }
+//     performance.mark('wasm.fftPermute.end')
+//     performance.measure('wasm.fftPermute', 'wasm.fftPermute.start', 'wasm.fftPermute.end')
+//
+//     fftPermuteComplex(inputComplex, new Array(2*n))
+//     performance.mark('js.fftPermute.start')
+//     for (var i=0; i<nIter; i++) {
+//       // res = new Array(2*n)
+//       fftPermuteComplex(inputComplex, res)
+//     }
+//     performance.mark('js.fftPermute.end')
+//     performance.measure('js.fftPermute', 'js.fftPermute.start', 'js.fftPermute.end')
+//
+//     performance.mark('wasm.shiftBit.start')
+//     for (var i=0; i<n; i++) {
+//       wasm.shiftReverse(i)
+//     }
+//     performance.mark('wasm.shiftBit.end')
+//     performance.measure('wasm.shiftBit', 'wasm.shiftBit.start', 'wasm.shiftBit.end')
+//
+//     performance.mark('js.shiftBit.start')
+//     for (var i=0; i<n; i++) {
+//       shiftBit(reverseBits(i))
+//     }
+//     performance.mark('js.shiftBit.end')
+//     performance.measure('js.shiftBit', 'js.shiftBit.start', 'js.shiftBit.end')
+//   })
+// }
+
+fftWasmBenchmark(10)
 // var nIter = 1000
 // var t0 = performance.now()
 // for (var i=0; i<nIter; i++) {
