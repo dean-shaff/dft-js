@@ -63,7 +63,11 @@ const fft = function (x, inverse) {
       omega = Complex.ONE
       for (var k = 0; k < incr/2; k++) {
         u = res[offset + k]
-        t = res[offset + k + incr/2].mul(omega)
+        t = res[offset + k + incr/2]
+        // console.log(u)
+        // console.log(t)
+        t = t.mul(omega)
+        // console.log(offset + k, offset + k + incr/2)
         omega = omega.mul(theta_exp)
         // console.log(`k: ${k}, omega: ${omega}`)
         res[offset + k] = u.add(t)

@@ -59,7 +59,7 @@ describe('fft wasm', function () {
 		}
 	})
 	it('should permute input data', function () {
-		var n = 8
+		var n = 2048
 		var p = Math.log2(n)
 		var input = testVectors[n]['in']
 		var expected = testVectors[n]['out']
@@ -80,17 +80,51 @@ describe('fft wasm', function () {
 			assert.equal(permuted[2*i + 1], memory[2*i + 1 + 2*n])
 		}
 	})
+	it('should do complex multiplication', function () {
+		for (var i=-1000; i<1000; i++) {
+			var c0 = new Complex([i*Math.random(), i*Math.random()])
+			var c1 = new Complex([i*Math.random(), i*Math.random()])
+			var c_mul = c0.mul(c1)
+
+			var c_mul_re = wasm.complex_mul_re(c0.re, c0.im, c1.re, c1.im)
+			var c_mul_im = wasm.complex_mul_im(c0.re, c0.im, c1.re, c1.im)
+
+			assert.equal(c_mul_re, c_mul.re)
+			assert.equal(c_mul_im, c_mul.im)
+		}
+	})
+
 	it('should compute fft', function () {
-		var n = 8
+		var n = 2048
 		const memory = new Float64Array(wasm.memory.buffer, 0, 4*n) // twice as much space for result, 2 for complex
+		var input = testVectors[n]['in']
+		var inputComplex = input.map((c) => {
+			return new Complex([c[0], c[1]])
+		})
+		var t0 = performance.now()
+		var f = fft(inputComplex, false)
+		console.log(`Took ${(performance.now() - t0)} to compute fft`)
+		var expected = testVectors[n]['out']
+		for (var i=0; i<n; i++) {
+			memory[2*i] = input[i][0]
+			memory[2*i + 1] = input[i][1]
+		}
 		var t0 = performance.now()
 		wasm.fft(n, -1)
-		console.log(`Took ${(performance.now() - t0)} to compute FFT`)
+		console.log(`Took ${(performance.now() - t0)} to compute wasm.fft`)
+		for (var i=0; i<n; i++) {
+			// console.log(`i=${i}: input: expected: ${input[i]}, actual: ${memory[2*i]},${memory[2*i + 1]}`)
+			// console.log(`i=${i}: output: expected: ${expected[i]}, actual: ${memory[2*n + 2*i]},${memory[2*n + 2*i + 1]}`)
+
+			assert.equal(Math.abs(memory[2*n + 2*i] - expected[i][0]) < thresh, true)
+			assert.equal(Math.abs(memory[2*n + 2*i + 1] - expected[i][1]) < thresh, true)
+		}
+
 	})
 })
 
 
-describe('fft', function () {
+describe.skip('fft', function () {
 
 	it('should produce the same results as test vectors', function () {
 		Object.keys(testVectors).forEach((n) => {

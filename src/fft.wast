@@ -2,6 +2,8 @@
 
   (import "console" "log" (func $print_i32 (param i32)))
   (import "console" "log" (func $print_f64 (param f64)))
+  (import "console" "logx2" (func $print2_f64 (param f64 f64)))
+  (import "console" "logx2" (func $print2_i32 (param i32 i32)))
   (import "performance" "now" (func $now (result f64)))
   (import "math" "exp" (func $exp (param f64) (result f64)))
   (import "math" "cos" (func $cos (param f64) (result f64)))
@@ -230,6 +232,7 @@
     (local $odd_idx i32)
     (local $odd_idx_bytes_re i32)
     (local $odd_idx_bytes_im i32)
+    (local $temp_re f64)
 
     ;; loop counters
     (local $p_idx i32)
@@ -268,9 +271,11 @@
       )
     )
     ;; ($call $print_f64 (local.get $delta))
+    (local.set $p_idx (i32.const 1))
 
     (block
       (loop
+        ;; (call $print_i32 ($local.get $p_idx))
         (local.set $offset_idx (i32.const 0))
         (local.set $incr
           (i32.shl
@@ -298,6 +303,8 @@
         (local.set $theta_re (call $cos (local.get $theta)))
         (local.set $theta_im (call $sin (local.get $theta)))
 
+        ;; (call $print2_f64 (local.get $theta_re) (local.get $theta_im))
+
         (block
           (loop
             (local.set $k_idx (i32.const 0))
@@ -317,6 +324,9 @@
                     (local.get $incr_2)
                   )
                 )
+
+                ;; (call $print2_i32 (local.get $even_idx) (local.get $odd_idx))
+
                 (local.set $even_idx_bytes_re
                   (i32.mul
                     (i32.add
@@ -357,13 +367,21 @@
                 (local.set $even_re (f64.load (local.get $even_idx_bytes_re)))
                 (local.set $even_im (f64.load (local.get $even_idx_bytes_im)))
                 (local.set $odd_re (f64.load (local.get $odd_idx_bytes_re)))
-                (local.set $odd_im (f64.load (local.get $odd_idx_bytes_re)))
+                (local.set $odd_im (f64.load (local.get $odd_idx_bytes_im)))
 
-                (local.set $odd_re (call $complex_mul_re (local.get $odd_re) (local.get $odd_im) (local.get $omega_re) (local.get $omega_im)))
+                ;; (call $print2_f64 (local.get $even_re) (local.get $even_im))
+                ;; (call $print2_f64 (local.get $odd_re) (local.get $odd_im))
+
+
+                (local.set $temp_re (call $complex_mul_re (local.get $odd_re) (local.get $odd_im) (local.get $omega_re) (local.get $omega_im)))
                 (local.set $odd_im (call $complex_mul_im (local.get $odd_re) (local.get $odd_im) (local.get $omega_re) (local.get $omega_im)))
+                (local.set $odd_re (local.get $temp_re))
 
-                (local.set $omega_re (call $complex_mul_re (local.get $omega_re) (local.get $omega_im) (local.get $theta_re) (local.get $theta_im)))
+                (local.set $temp_re (call $complex_mul_re (local.get $omega_re) (local.get $omega_im) (local.get $theta_re) (local.get $theta_im)))
                 (local.set $omega_im (call $complex_mul_im (local.get $omega_re) (local.get $omega_im) (local.get $theta_re) (local.get $theta_im)))
+                (local.set $omega_re (local.get $temp_re))
+
+                ;; (call $print2_f64 (local.get $omega_re) (local.get $omega_im))
 
                 (f64.store
                   (local.get $even_idx_bytes_re)
@@ -390,10 +408,10 @@
                 )
 
                 (f64.store
-                  (local.get $odd_idx_bytes_re)
+                  (local.get $odd_idx_bytes_im)
                   (f64.sub
-                    (local.get $even_re)
-                    (local.get $odd_re)
+                    (local.get $even_im)
+                    (local.get $odd_im)
                   )
                 )
 
@@ -408,7 +426,7 @@
           ) ;; var offset = 0; offset < n; offset += incr
         )
         (local.set $p_idx (i32.add (local.get $p_idx) (i32.const 1)))
-        (br_if 1 (i32.eq (local.get $p_idx) (local.get $log_n)))
+        (br_if 1 (i32.eq (local.get $p_idx) (i32.add (local.get $log_n) (i32.const 1))))
         (br 0)
       ) ;; loop for (var p = 1; p <= log_n; p++)
     )
@@ -419,5 +437,7 @@
   (export "shiftBit" (func $shiftBit))
   (export "shiftReverse" (func $shiftReverse))
   (export "fftPermute" (func $fftPermute))
+  (export "complex_mul_re" (func $complex_mul_re))
+  (export "complex_mul_im" (func $complex_mul_im))
   (export "fft" (func $fft))
 )

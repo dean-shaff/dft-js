@@ -30,7 +30,8 @@ const instantiate = async function (in_file_path) {
 	var module = await WebAssembly.compile(buffer)
 	var instance = await WebAssembly.instantiate(module, {
 		console: {
-			log: (x) => console.log(x)
+			log: (x) => console.log(x),
+			logx2: (x, y) => console.log(x, y)
 		},
 		performance: {
 			now: () => performance.now()
