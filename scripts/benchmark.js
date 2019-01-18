@@ -38,37 +38,37 @@ async function fftWasmBenchmark (nIter) {
   var testVectors = loadTestVectors()
   var sizes = Object.keys(testVectors)
   // sizes = [8192]
-  sizes = [32768]
+  sizes = [512, 2048]
   sizes.forEach((n)=>{
     var input = testVectors[n]['in']
     var inputComplex = input.map((c)=>{
       return new Complex([c[0], c[1]])
     })
 
-    var t0 = now()
-    for (i=0; i<nIter; i++) {
-      fft(inputComplex, false)
-    }
-    var deltaJs = (now() - t0)/1000
-    console.log(`JS fft: ${deltaJs}, ${deltaJs/nIter} per loop`)
+    // var t0 = now()
+    // for (var i=0; i<nIter; i++) {
+    //   fft(inputComplex, false)
+    // }
+    // var deltaJs = (now() - t0)/1000
+    // console.log(`JS fft: ${deltaJs} sec, ${deltaJs/nIter} per loop, ${nIter/deltaJs} iter per second`)
 
-    const memory = new Float64Array(wasm.memory.buffer, 0, 4*n)
-    for (var i=0; i<n; i++) {
-      memory[2*i] = input[i][0]
-      memory[2*i + 1] = input[i][1]
+    var memory = new Float64Array(wasm.memory.buffer, 0, 4*n)
+    for (var j=0; j<n; j++) {
+      memory[2*j] = input[j][0]
+      memory[2*j + 1] = input[j][1]
     }
 
     var t0 = now()
-    for (i=0; i<nIter; i++) {
+    for (var i=0; i<nIter; i++) {
+      // console.log(`n=${i}`)
       wasm.fft(n, -1)
     }
     var deltaWasm = (now() - t0)/1000
-    console.log(`wasm fft: ${deltaWasm}, ${deltaWasm/nIter} per loop`)
+    console.log(`wasm fft: size: ${n}: ${deltaWasm} sec, ${deltaWasm/nIter} per loop, ${nIter/deltaWasm} iter per second`)
     // console.log(`wasm.fft is ${deltaJs/deltaWasm}x faster`)
-
-
   })
 }
+fftWasmBenchmark(2000)
 
 // async function fftWasmBenchmark (nIter) {
 // 	// buildBinaryen(watPath, wasmPath)
@@ -133,7 +133,6 @@ async function fftWasmBenchmark (nIter) {
 //   })
 // }
 
-fftWasmBenchmark(1000)
 // var nIter = 1000
 // var t0 = performance.now()
 // for (var i=0; i<nIter; i++) {

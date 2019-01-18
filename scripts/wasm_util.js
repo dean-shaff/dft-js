@@ -42,6 +42,7 @@ const instantiate = async function (in_file_path) {
 			cos: (x) => Math.cos(x),
 			log2: (x) => Math.log2(x),
 			PI: Math.PI,
+			PI_2: Math.PI/2
 		}
 	})
 	return instance.exports

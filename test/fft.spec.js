@@ -25,6 +25,7 @@ before(function () {
 
 describe('fft wasm', function () {
 	var wasm
+	var nIter = 100
 	before(function () {
 		// build(watPath, wasmPath)
 	})
@@ -36,6 +37,29 @@ describe('fft wasm', function () {
 		var resExpected = Math.exp(x)
 		var resTest = wasm.exp(x)
 		assert.equal(resExpected, resTest)
+	})
+	it('should calculate sin and cos', function () {
+		var r = () => {return Math.random()*Math.PI/2}
+		for (var n=-nIter; n<nIter; n++){
+			var x = [n*r(),
+							 n*Math.PI/2 + r(),
+						 	 n*Math.PI + r(),
+							 n*(3*Math.PI/2) + r()]
+			for (var i=0; i<x.length; i++) {
+				// var x = 2*Math.PI*Math.random()
+				// var x = 2.3211475649426534
+				var x_i = x[i]
+				var expected = Math.sin(x_i)
+				var test = wasm.sin_f64(x_i)
+				assert.equal(Math.abs(expected - test) < thresh, true)
+
+				var expected = Math.cos(x_i)
+				var test = wasm.cos_f64(x_i)
+				assert.equal(Math.abs(expected - test) < thresh, true)
+
+				// console.log(x_i, expected, test)
+			}
+		}
 	})
 	it('should calculate the bit reversal of the integer', function () {
 		var n = 2048
