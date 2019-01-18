@@ -12,6 +12,7 @@ const srcDir = path.join(topDir, 'src')
 const buildDir = path.join(topDir, 'build')
 const watPath = path.join(srcDir, 'fft.wast')
 const wasmPath = path.join(buildDir, 'fft.wasm')
+const wasmOptPath = path.join(buildDir, 'fft.opt.wasm')
 const dataDir = path.join(topDir, 'test', 'data')
 
 function now() {
@@ -32,10 +33,12 @@ const obs = new PerformanceObserver((items) => {
 obs.observe({ entryTypes: ['measure'] })
 
 async function fftWasmBenchmark (nIter) {
-  var wasm = await instantiate(wasmPath)
+  var wasm = await instantiate(wasmOptPath)
+  // var wasm = await instantiate(wasmPath)
   var testVectors = loadTestVectors()
   var sizes = Object.keys(testVectors)
   // sizes = [8192]
+  sizes = [32768]
   sizes.forEach((n)=>{
     var input = testVectors[n]['in']
     var inputComplex = input.map((c)=>{
@@ -61,7 +64,7 @@ async function fftWasmBenchmark (nIter) {
     }
     var deltaWasm = (now() - t0)/1000
     console.log(`wasm fft: ${deltaWasm}, ${deltaWasm/nIter} per loop`)
-    console.log(`wasm.fft is ${deltaJs/deltaWasm}x faster`)
+    // console.log(`wasm.fft is ${deltaJs/deltaWasm}x faster`)
 
 
   })
@@ -130,7 +133,7 @@ async function fftWasmBenchmark (nIter) {
 //   })
 // }
 
-fftWasmBenchmark(10)
+fftWasmBenchmark(1000)
 // var nIter = 1000
 // var t0 = performance.now()
 // for (var i=0; i<nIter; i++) {

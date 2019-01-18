@@ -5,6 +5,7 @@
   "main": "fft.js",
   "scripts": {
     "compile": "wasm-as src/fft.wast -o build/fft.wasm",
+    "optimize": "wasm-opt build/fft.wasm -o build/fft.opt.wasm -O3 --rse",
     "pretest": "npm run compile",
     "test": "./node_modules/.bin/mocha ./test/*.spec.js",
     "prebench": "npm run compile",
