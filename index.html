@@ -9,24 +9,8 @@
 
   <body>
     <script>
-      var importObject = {
-        console: {
-          log: (x, y) => console.log(x, y)
-        },
-        math: {
-          exp: (x) => Math.exp(x),
-          log2: (x) => Math.log2(x)
-        }
-      }
-      fetch('./build/fft.wasm').then(response =>
-        response.arrayBuffer()
-      ).then(bytes =>
-        WebAssembly.instantiate(bytes, importObject)
-      ).then(wasm => {
-        wasm = wasm.instance.exports
-        console.log(wasm.reverseBits(0))
-      })
+
     </script>
-    <script src='src/fft.js'></script>
+    <script src='scripts/benchmark.js'></script>
   </body>
 </html>

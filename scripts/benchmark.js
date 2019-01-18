@@ -1,49 +1,19 @@
-const path = require('path')
-const fs = require('fs')
-const { performance, PerformanceObserver } = require('perf_hooks')
-
-const Complex = require('complex.js')
-
-const { build, buildBinaryen, instantiate } = require('./wasm_util.js')
-const { fft, fftPermute, fftPermuteComplex, shiftBit, reverseBits } = require('./../src/fft.js')
-
-const topDir = path.dirname(__dirname)
-const srcDir = path.join(topDir, 'src')
-const buildDir = path.join(topDir, 'build')
-const watPath = path.join(srcDir, 'fft.wast')
-const wasmPath = path.join(buildDir, 'fft.wasm')
-const wasmOptPath = path.join(buildDir, 'fft.opt.wasm')
-const dataDir = path.join(topDir, 'test', 'data')
-
-function now() {
-  return performance.now()
+function now (performance) {
+  return function () {
+    return performance.now()
+  }
 }
 
-function loadTestVectors () {
-  var testVecFilePath = path.join(dataDir, 'test_vectors.json')
-  var testVectors = JSON.parse(fs.readFileSync(testVecFilePath))
-  return testVectors
-}
+async function fftWasmBenchmark (nIter, wasm, testVectors, now) {
 
-const obs = new PerformanceObserver((items) => {
-  var entries = items.getEntries()
-  console.log(entries[0].name, entries[0].duration)
-  performance.clearMarks()
-})
-obs.observe({ entryTypes: ['measure'] })
-
-async function fftWasmBenchmark (nIter) {
-  var wasm = await instantiate(wasmOptPath)
-  // var wasm = await instantiate(wasmPath)
-  var testVectors = loadTestVectors()
   var sizes = Object.keys(testVectors)
   // sizes = [8192]
   sizes = [512, 2048]
   sizes.forEach((n)=>{
     var input = testVectors[n]['in']
-    var inputComplex = input.map((c)=>{
-      return new Complex([c[0], c[1]])
-    })
+    // var inputComplex = input.map((c)=>{
+    //   return new Complex([c[0], c[1]])
+    // })
 
     // var t0 = now()
     // for (var i=0; i<nIter; i++) {
@@ -68,7 +38,94 @@ async function fftWasmBenchmark (nIter) {
     // console.log(`wasm.fft is ${deltaJs/deltaWasm}x faster`)
   })
 }
-fftWasmBenchmark(2000)
+
+if (typeof require != 'undefined' && require.main == module) {
+  const path = require('path')
+  const fs = require('fs')
+  const { performance } = require('perf_hooks')
+
+  const Complex = require('complex.js')
+
+  const { build, buildBinaryen, instantiate } = require('./wasm_util.js')
+  const { fft, fftPermute, fftPermuteComplex, shiftBit, reverseBits } = require('./../src/fft.js')
+
+  const topDir = path.dirname(__dirname)
+  const srcDir = path.join(topDir, 'src')
+  const buildDir = path.join(topDir, 'build')
+  const watPath = path.join(srcDir, 'fft.wast')
+  const wasmPath = path.join(buildDir, 'fft.wasm')
+  const wasmOptPath = path.join(buildDir, 'fft.opt.wasm')
+  const dataDir = path.join(topDir, 'test', 'data')
+
+  function loadTestVectors () {
+    var testVecFilePath = path.join(dataDir, 'test_vectors.json')
+    var testVectors = JSON.parse(fs.readFileSync(testVecFilePath))
+    return testVectors
+  }
+  async function main () {
+    var testVectors = loadTestVectors()
+    var wasmModule = await instantiate(wasmOptPath)
+    fftWasmBenchmark(2000, wasmModule, testVectors, now(performance))
+  }
+  main()
+} else {
+
+  var importObject = {
+    console: {
+      log: (x) => console.log(x),
+      logx2: (x, y) => console.log(x, y)
+    },
+    performance: {
+      now: () => performance.now()
+    },
+    math: {
+      exp: (x) => Math.exp(x),
+      sin: (x) => Math.sin(x),
+      cos: (x) => Math.cos(x),
+      log2: (x) => Math.log2(x),
+      PI: Math.PI,
+      PI_2: Math.PI/2
+    }
+  }
+
+  const instantiate = async (wasmPath, importObject) => {
+
+    // return fetch(wasmPath).then(response =>
+    //   response.arrayBuffer()
+    // )
+    return fetch(wasmPath).then((response) =>
+      WebAssembly.compileStreaming(response)
+    ).then(module =>
+      WebAssembly.instantiate(module, importObject)
+    ).then(wasm => {
+      wasm = wasm.instance.exports
+      return wasm
+    })
+  }
+
+  const loadTestVectors = () => {
+    var testVectors = {}
+    var sizes = [512, 2048]
+    sizes.forEach((n) => {
+      var input = []
+      for (var i=0; i<n; i++){
+        input.push([Math.random(), Math.random()])
+      }
+      testVectors[n] = {
+        'in': input
+      }
+    })
+    return testVectors
+  }
+
+  async function main () {
+    var testVectors = loadTestVectors()
+    var wasmModule = await instantiate('./build/fft.wasm', importObject)
+    fftWasmBenchmark(2000, wasmModule, testVectors, now(window.performance))
+  }
+  window.main = main
+  main()
+}
 
 // async function fftWasmBenchmark (nIter) {
 // 	// buildBinaryen(watPath, wasmPath)
