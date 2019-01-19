@@ -11,10 +11,11 @@ function NDArray (shape){
       return access[0]
     }
     access = this._order.map(i => access[i])
+    shape = this._order.map(i => this.shape[i])
     var idx = access[this.ndim-1]
     var scale = 1
     for (var i=this.ndim-2; i >= 0; i--) {
-      scale *= this.shape[i+1]
+      scale *= shape[i+1]
       idx += scale*access[i]
     }
     return idx
@@ -35,9 +36,22 @@ function NDArray (shape){
   this.transpose = function () {
     if (this.ndim == 2) {
       this._order = this._order.reverse()
-      this.shape = this._order.map(i => this._shape[i])
+      this.shape.reverse()
+    } else {
+      throw 'Can\'t transponse an array with more or less than 2 dimension. Try swapaxes'
     }
   }
+
+  this.swapaxes = function (axes) {
+    var order = this._order
+    order[axes[0]] = this._order[axes[1]]
+    order[axes[1]] = this._order[axes[0]]
+    this._order = order
+    this.shape = this._order.map(i=>this.shape[i])
+  }
+
+
+
 }
 
 exports.NDArray = NDArray
