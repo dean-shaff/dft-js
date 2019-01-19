@@ -1,241 +1,42 @@
-function now (performance) {
-  return function () {
-    return performance.now()
-  }
+const fftBenchmark = function (nIter, testFunctions, testVectors, testSizes, now) {
+  var report = {'nIter': nIter}
+  testFunctions.forEach((f, idx) => {
+    report[f.name] = {}
+    testSizes.forEach(n => {
+      var x = testVectors[n]['in']
+      var t0 = now()
+      for (var i=0; i<nIter; i++) {
+        f(x)
+      }
+      var delta = now() - t0
+      report[f.name][n] = delta
+    })
+  })
+  return report
 }
 
-async function fftWasmBenchmark (nIter, wasm, testVectors, now) {
+const format = function (val, n) {
+  if (n === undefined) {
+    n = 4
+  }
+  return val.toFixed(n)
+}
 
-  var sizes = Object.keys(testVectors)
-  // sizes = [8192]
-  sizes = [512, 2048]
-  sizes.forEach((n)=>{
-    var input = testVectors[n]['in']
-    // var inputComplex = input.map((c)=>{
-    //   return new Complex([c[0], c[1]])
-    // })
 
-    // var t0 = now()
-    // for (var i=0; i<nIter; i++) {
-    //   fft(inputComplex, false)
-    // }
-    // var deltaJs = (now() - t0)/1000
-    // console.log(`JS fft: ${deltaJs} sec, ${deltaJs/nIter} per loop, ${nIter/deltaJs} iter per second`)
-
-    var memory = new Float64Array(wasm.memory.buffer, 0, 4*n)
-    for (var j=0; j<n; j++) {
-      memory[2*j] = input[j][0]
-      memory[2*j + 1] = input[j][1]
-    }
-
-    var t0 = now()
-    for (var i=0; i<nIter; i++) {
-      // console.log(`n=${i}`)
-      wasm.fft(n, -1)
-    }
-    var deltaWasm = (now() - t0)/1000
-    console.log(`wasm fft: size: ${n}: ${deltaWasm} sec, ${deltaWasm/nIter} per loop, ${nIter/deltaWasm} iter per second`)
-    // console.log(`wasm.fft is ${deltaJs/deltaWasm}x faster`)
+const formatReport = function (report) {
+  var nIter = report['nIter']
+  Object.keys(report).forEach(name => {
+    Object.keys(report[name]).forEach(n => {
+      var delta = report[name][n] / 1000
+      console.log(`n=${n}, ${name}: ${format(delta)} sec, ${format(delta/nIter, 7)} per loop, ${format(nIter / delta, 2)} iter/sec`)
+    })
   })
 }
 
-if (typeof require != 'undefined' && require.main == module) {
-  const path = require('path')
-  const fs = require('fs')
-  const { performance } = require('perf_hooks')
-
-  const Complex = require('complex.js')
-
-  const { build, buildBinaryen, instantiate } = require('./wasm_util.js')
-  const { fft, fftPermute, fftPermuteComplex, shiftBit, reverseBits } = require('./../src/fft.js')
-
-  const topDir = path.dirname(__dirname)
-  const srcDir = path.join(topDir, 'src')
-  const buildDir = path.join(topDir, 'build')
-  const watPath = path.join(srcDir, 'fft.wast')
-  const wasmPath = path.join(buildDir, 'fft.wasm')
-  const wasmOptPath = path.join(buildDir, 'fft.opt.wasm')
-  const dataDir = path.join(topDir, 'test', 'data')
-
-  function loadTestVectors () {
-    var testVecFilePath = path.join(dataDir, 'test_vectors.json')
-    var testVectors = JSON.parse(fs.readFileSync(testVecFilePath))
-    return testVectors
-  }
-  async function main () {
-    var testVectors = loadTestVectors()
-    var wasmModule = await instantiate(wasmOptPath)
-    fftWasmBenchmark(2000, wasmModule, testVectors, now(performance))
-  }
-  main()
+if (typeof require != 'undefined') {
+  exports.fftBenchmark = fftBenchmark
+  exports.formatReport = formatReport
 } else {
-
-  var importObject = {
-    console: {
-      log: (x) => console.log(x),
-      logx2: (x, y) => console.log(x, y)
-    },
-    performance: {
-      now: () => performance.now()
-    },
-    math: {
-      exp: (x) => Math.exp(x),
-      sin: (x) => Math.sin(x),
-      cos: (x) => Math.cos(x),
-      log2: (x) => Math.log2(x),
-      PI: Math.PI,
-      PI_2: Math.PI/2
-    }
-  }
-
-  const instantiate = async (wasmPath, importObject) => {
-
-    // return fetch(wasmPath).then(response =>
-    //   response.arrayBuffer()
-    // )
-    return fetch(wasmPath).then((response) =>
-      WebAssembly.compileStreaming(response)
-    ).then(module =>
-      WebAssembly.instantiate(module, importObject)
-    ).then(wasm => {
-      wasm = wasm.instance.exports
-      return wasm
-    })
-  }
-
-  const loadTestVectors = () => {
-    var testVectors = {}
-    var sizes = [512, 2048]
-    sizes.forEach((n) => {
-      var input = []
-      for (var i=0; i<n; i++){
-        input.push([Math.random(), Math.random()])
-      }
-      testVectors[n] = {
-        'in': input
-      }
-    })
-    return testVectors
-  }
-
-  async function main () {
-    var testVectors = loadTestVectors()
-    var wasmModule = await instantiate('./build/fft.wasm', importObject)
-    fftWasmBenchmark(2000, wasmModule, testVectors, now(window.performance))
-  }
-  window.main = main
-  main()
+  window.fftBenchmark = fftBenchmark
+  window.formatReport = formatReport
 }
-
-// async function fftWasmBenchmark (nIter) {
-// 	// buildBinaryen(watPath, wasmPath)
-// 	var wasm = await instantiate(wasmPath)
-//
-//   var testVectors = loadTestVectors()
-//   var sizes = Object.keys(testVectors)
-//   // var memory = new Float64Array(
-//   //   wasm.memory.buffer, 0, 4*Math.max(...sizes))
-//   var memory
-//   sizes = [8192]
-//   sizes.forEach((n) => {
-//     var input = testVectors[n]['in']
-//     var inputComplex = input.map((c) => {
-//       return new Complex([c[0], c[1]])
-//     })
-//     var inputComplex = input.reduce(
-//       ( accumulator, currentValue ) => accumulator.concat(currentValue),
-//       []
-//     )
-//     var res = new Array(2*n)
-//     // var res = new Array(n)
-//     // var res = input.map(()=>{
-//     //   return Complex.ZERO
-//     // })
-//     memory = new Float64Array(
-//       wasm.memory.buffer, 0, 4*n)
-//
-//     var p = Math.log2(n)
-//     wasm.fftPermute(n, p)
-//     performance.mark('wasm.fftPermute.start')
-//     for (var i=0; i<nIter; i++) {
-//       // var t0 = performance.now()
-//       wasm.fftPermute(n, p)
-//       // console.log(`${(performance.now() - t0) / 1000}`)
-//     }
-//     performance.mark('wasm.fftPermute.end')
-//     performance.measure('wasm.fftPermute', 'wasm.fftPermute.start', 'wasm.fftPermute.end')
-//
-//     fftPermuteComplex(inputComplex, new Array(2*n))
-//     performance.mark('js.fftPermute.start')
-//     for (var i=0; i<nIter; i++) {
-//       // res = new Array(2*n)
-//       fftPermuteComplex(inputComplex, res)
-//     }
-//     performance.mark('js.fftPermute.end')
-//     performance.measure('js.fftPermute', 'js.fftPermute.start', 'js.fftPermute.end')
-//
-//     performance.mark('wasm.shiftBit.start')
-//     for (var i=0; i<n; i++) {
-//       wasm.shiftReverse(i)
-//     }
-//     performance.mark('wasm.shiftBit.end')
-//     performance.measure('wasm.shiftBit', 'wasm.shiftBit.start', 'wasm.shiftBit.end')
-//
-//     performance.mark('js.shiftBit.start')
-//     for (var i=0; i<n; i++) {
-//       shiftBit(reverseBits(i))
-//     }
-//     performance.mark('js.shiftBit.end')
-//     performance.measure('js.shiftBit', 'js.shiftBit.start', 'js.shiftBit.end')
-//   })
-// }
-
-// var nIter = 1000
-// var t0 = performance.now()
-// for (var i=0; i<nIter; i++) {
-//     wasm.sumArray(n)
-// }
-// var delta = performance.now() - t0
-// console.log(`${delta/1000/nIter} per loop, ${delta/1000} in total`)
-// const reducer = (accumulator, currentValue) => accumulator + currentValue
-// t0 = performance.now()
-// for (var i=0; i<nIter; i++) {
-//     memory.reduce(reducer)
-// }
-// var delta1 = performance.now() - t0
-// console.log(`${delta1/1000/nIter} per loop, ${delta1/1000} in total`)
-// console.log(`wasm verison ${delta1 / delta}x faster`)
-// var res = wasm.sumArray(n)
-// console.log(`wasm.sumArray: ${res}`)
-//
-
-// function main () {
-//   n = 128
-//   x = new Array(n)
-//   for (var i=0; i<n; i++) {
-//     x[i] = new Complex([i, i])
-//   }
-//   var t0
-//   var delta0
-//   var delta1
-//   var k_rec
-//   var k_iter
-//   var k_inv
-//   var nIter = n**2
-//   var plan = new FFT(n)
-//   t0 = performance.now()
-//   for (var i=0; i<nIter; i++) {
-//     k_rec = plan.forward(x)
-//   }
-//   delta0 = performance.now() - t0
-//   console.log(`FFT: ${delta0/1000/nIter}`)
-//   t0 = performance.now()
-//   for (var i=0; i<nIter; i++) {
-//     k_iter = fft_it(x, false)
-//   }
-//   delta1 = performance.now() - t0
-//   console.log(`FFT: ${delta1/1000/nIter}`)
-//   console.log(`iterative is ${delta0 / delta1} times faster`)
-//   k_inv = fft_it(k_iter, true)
-//   // console.log(k_inv)
-// }

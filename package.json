@@ -7,9 +7,9 @@
     "compile": "wasm-as src/fft.wast -o build/fft.wasm",
     "optimize": "wasm-opt build/fft.wasm -o build/fft.opt.wasm -O3 --rse",
     "pretest": "npm run compile",
-    "test": "./node_modules/.bin/mocha ./test/*.spec.js",
+    "test": "./node_modules/.bin/mocha ./test/*.spec.js --full-trace",
     "prebench": "npm run compile && npm run optimize",
-    "bench": "node ./scripts/benchmark.js",
+    "bench": "node ./scripts/benchmark.node.js",
     "convert": "node ./scripts/wast2wat.js ./src/fft.wast"
   },
   "keywords": [],

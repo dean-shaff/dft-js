@@ -162,6 +162,196 @@
     (get_local $x)
   )
 
+  (func $sin_f64 (param $x f64) (result f64)
+    (local $n_lsb_PI i32)
+    (local $n_lsb_PI_2 i32)
+    (local $n_f64 f64)
+    (local $x_sqr f64)
+    (local $y f64)
+
+    ;; (call $print_f64 (local.get $x))
+
+    (local.set $n_f64
+      (f64.floor
+        (f64.div
+          (local.get $x)
+          (global.get $PI_2)
+        )
+      )
+    )
+
+    ;; (call $print_f64 (local.get $n_f64))
+
+    (local.set $n_lsb_PI_2
+      (i32.and
+        (i32.trunc_f64_s
+          (local.get $n_f64)
+        )
+        (i32.const 1)
+      )
+    )
+
+    (local.set $n_lsb_PI
+      (i32.and
+        (i32.trunc_f64_s
+          (f64.floor
+            (f64.div
+              (local.get $x)
+              (global.get $PI)
+            )
+          )
+        )
+        (i32.const 1)
+      )
+    )
+
+    (local.set $x
+      (f64.sub
+        (local.get $x)
+        (f64.mul
+          (local.get $n_f64)
+          (global.get $PI_2)
+        )
+      )
+    )
+
+    ;; (call $print_f64 (local.get $x))
+
+    (if
+      (i32.eq
+        (local.get $n_lsb_PI_2)
+        (i32.const 1)
+      )
+      (then
+        (local.set $x
+          (f64.sub
+            (global.get $PI_2)
+            (local.get $x)
+          )
+        )
+      )
+    )
+
+    ;; (call $print_f64 (local.get $x))
+
+    (local.set $x_sqr
+      (f64.mul
+        (local.get $x)
+        (local.get $x)
+      )
+    )
+    ;; first order term
+    (local.set $y (local.get $x))
+
+    ;; third order term
+    (local.set $x
+      (f64.mul
+        (local.get $x)
+        (local.get $x_sqr)
+      )
+    )
+    (local.set $y
+      (f64.sub
+        (local.get $y)
+        (f64.div
+          (local.get $x)
+          (f64.const 6.0)
+        )
+      )
+    )
+
+    ;; fifth order term
+    (local.set $x
+      (f64.mul
+        (local.get $x)
+        (local.get $x_sqr)
+      )
+    )
+    (local.set $y
+      (f64.add
+        (local.get $y)
+        (f64.div
+          (local.get $x)
+          (f64.const 120.0)
+        )
+      )
+    )
+
+    ;; seventh order term
+    ;; (local.set $x
+    ;;   (f64.mul
+    ;;     (local.get $x)
+    ;;     (local.get $x_sqr)
+    ;;   )
+    ;; )
+    ;; (local.set $y
+    ;;   (f64.sub
+    ;;     (local.get $y)
+    ;;     (f64.div
+    ;;       (local.get $x)
+    ;;       (f64.const 5040.0)
+    ;;     )
+    ;;   )
+    ;; )
+    ;;
+    ;; ;; ninth order term
+    ;; (local.set $x
+    ;;   (f64.mul
+    ;;     (local.get $x)
+    ;;     (local.get $x_sqr)
+    ;;   )
+    ;; )
+    ;; (local.set $y
+    ;;   (f64.add
+    ;;     (local.get $y)
+    ;;     (f64.div
+    ;;       (local.get $x)
+    ;;       (f64.const 362880.0)
+    ;;     )
+    ;;   )
+    ;; )
+
+    (if
+      (i32.eq
+        (local.get $n_lsb_PI)
+        (i32.const 1)
+      )
+      (then
+        (local.set $y
+          (f64.mul
+            (local.get $y)
+            (f64.const -1)
+          )
+        )
+      )
+    )
+
+    (local.get $y)
+  )
+
+  (func $cos_f64 (param $x f64) (result f64)
+    ;; (local $y f64)
+    ;; (local.set $y (f64.const 1.0))
+    ;; (local.set $x
+    ;;   (f64.mul
+    ;;     (local.get $x)
+    ;;     (local.get $x)
+    ;;   )
+    ;; )
+    ;; (local.set $y
+    ;;   (f64.sub)
+    ;; )
+    ;; cos is just sin shifted by PI/2
+    (local.set $x
+      (f64.add
+        (local.get $x)
+        (global.get $PI_2)
+      )
+    )
+    (call $sin_f64 (local.get $x))
+  )
+
+
   (func $shiftBit (param $bit i32) (param $n i32) (result i32)
 
     ;; bit >>> (32 - n)

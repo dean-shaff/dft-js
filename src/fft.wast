@@ -5,7 +5,6 @@
   (import "console" "logx2" (func $print2_f64 (param f64 f64)))
   (import "console" "logx2" (func $print2_i32 (param i32 i32)))
   (import "performance" "now" (func $now (result f64)))
-  (import "math" "exp" (func $exp (param f64) (result f64)))
   (import "math" "cos" (func $cos (param f64) (result f64)))
   (import "math" "sin" (func $sin (param f64) (result f64)))
   (import "math" "log2" (func $log2_i32 (param i32) (result i32)))
@@ -37,7 +36,7 @@
   )
 
 
-  (func $reverseBits (param $x i32) (result i32)
+  (func $reverse_bits (param $x i32) (result i32)
 
     ;; var mask = 0x55555555; // 0101...
     ;; i = ((i & mask) << 1) | ((i >> 1) & mask)
@@ -79,7 +78,7 @@
     (local.get $x)
   )
 
-  (func $shiftBit (param $bit i32) (param $n i32) (result i32)
+  (func $shift_bit (param $bit i32) (param $n i32) (result i32)
 
     ;; bit >>> (32 - n)
 
@@ -95,10 +94,10 @@
     (local.get $bit)
   )
 
-  (func $shiftReverse (param $bit i32) (param $n i32) (result i32)
+  (func $shift_reverse (param $bit i32) (param $n i32) (result i32)
     (local.set $bit
-      (call $shiftBit
-        (call $reverseBits
+      (call $shift_bit
+        (call $reverse_bits
           (local.get $bit)
         )
         (local.get $n)
@@ -107,7 +106,7 @@
     (local.get $bit)
   )
 
-  (func $fftPermute (param $n i32) (param $p i32)
+  (func $fft_permute_c (param $n i32) (param $p i32)
     (local $bytes_per_complex i32)
     (local $bytes_per_double i32)
     (local $nComplex i32)
@@ -134,14 +133,14 @@
         (loop
             ;; (local.set $shiftedIdxByte
             ;;   (i32.mul
-            ;;     (call $shiftReverse
+            ;;     (call $shift_reverse
             ;;       (local.get $idx)
             ;;       (local.get $p))
             ;;     (local.get $bytes_per_complex)))
 
             (local.set $shiftedIdx
-                (call $shiftBit
-                    (call $reverseBits (local.get $idx))
+                (call $shift_bit
+                    (call $reverse_bits (local.get $idx))
                     (local.get $p)))
 
             (local.set $shiftedIdxByte
@@ -186,195 +185,6 @@
     )
   )
 
-  (func $sin_f64 (param $x f64) (result f64)
-    (local $n_lsb_PI i32)
-    (local $n_lsb_PI_2 i32)
-    (local $n_f64 f64)
-    (local $x_sqr f64)
-    (local $y f64)
-
-    ;; (call $print_f64 (local.get $x))
-
-    (local.set $n_f64
-      (f64.floor
-        (f64.div
-          (local.get $x)
-          (global.get $PI_2)
-        )
-      )
-    )
-
-    ;; (call $print_f64 (local.get $n_f64))
-
-    (local.set $n_lsb_PI_2
-      (i32.and
-        (i32.trunc_f64_s
-          (local.get $n_f64)
-        )
-        (i32.const 1)
-      )
-    )
-
-    (local.set $n_lsb_PI
-      (i32.and
-        (i32.trunc_f64_s
-          (f64.floor
-            (f64.div
-              (local.get $x)
-              (global.get $PI)
-            )
-          )
-        )
-        (i32.const 1)
-      )
-    )
-
-    (local.set $x
-      (f64.sub
-        (local.get $x)
-        (f64.mul
-          (local.get $n_f64)
-          (global.get $PI_2)
-        )
-      )
-    )
-
-    ;; (call $print_f64 (local.get $x))
-
-    (if
-      (i32.eq
-        (local.get $n_lsb_PI_2)
-        (i32.const 1)
-      )
-      (then
-        (local.set $x
-          (f64.sub
-            (global.get $PI_2)
-            (local.get $x)
-          )
-        )
-      )
-    )
-
-    ;; (call $print_f64 (local.get $x))
-
-    (local.set $x_sqr
-      (f64.mul
-        (local.get $x)
-        (local.get $x)
-      )
-    )
-    ;; first order term
-    (local.set $y (local.get $x))
-
-    ;; third order term
-    (local.set $x
-      (f64.mul
-        (local.get $x)
-        (local.get $x_sqr)
-      )
-    )
-    (local.set $y
-      (f64.sub
-        (local.get $y)
-        (f64.div
-          (local.get $x)
-          (f64.const 6.0)
-        )
-      )
-    )
-
-    ;; fifth order term
-    (local.set $x
-      (f64.mul
-        (local.get $x)
-        (local.get $x_sqr)
-      )
-    )
-    (local.set $y
-      (f64.add
-        (local.get $y)
-        (f64.div
-          (local.get $x)
-          (f64.const 120.0)
-        )
-      )
-    )
-
-    ;; seventh order term
-    ;; (local.set $x
-    ;;   (f64.mul
-    ;;     (local.get $x)
-    ;;     (local.get $x_sqr)
-    ;;   )
-    ;; )
-    ;; (local.set $y
-    ;;   (f64.sub
-    ;;     (local.get $y)
-    ;;     (f64.div
-    ;;       (local.get $x)
-    ;;       (f64.const 5040.0)
-    ;;     )
-    ;;   )
-    ;; )
-    ;;
-    ;; ;; ninth order term
-    ;; (local.set $x
-    ;;   (f64.mul
-    ;;     (local.get $x)
-    ;;     (local.get $x_sqr)
-    ;;   )
-    ;; )
-    ;; (local.set $y
-    ;;   (f64.add
-    ;;     (local.get $y)
-    ;;     (f64.div
-    ;;       (local.get $x)
-    ;;       (f64.const 362880.0)
-    ;;     )
-    ;;   )
-    ;; )
-
-    (if
-      (i32.eq
-        (local.get $n_lsb_PI)
-        (i32.const 1)
-      )
-      (then
-        (local.set $y
-          (f64.mul
-            (local.get $y)
-            (f64.const -1)
-          )
-        )
-      )
-    )
-
-    (local.get $y)
-  )
-
-  (func $cos_f64 (param $x f64) (result f64)
-    ;; (local $y f64)
-    ;; (local.set $y (f64.const 1.0))
-    ;; (local.set $x
-    ;;   (f64.mul
-    ;;     (local.get $x)
-    ;;     (local.get $x)
-    ;;   )
-    ;; )
-    ;; (local.set $y
-    ;;   (f64.sub)
-    ;; )
-    ;; cos is just sin shifted by PI/2
-    (local.set $x
-      (f64.add
-        (local.get $x)
-        (global.get $PI_2)
-      )
-    )
-    (call $sin_f64 (local.get $x))
-  )
-
   (func $complex_mul_re (param $re0 f64) (param $im0 f64) (param $re1 f64) (param $im1 f64) (result f64)
     (f64.sub
       (f64.mul
@@ -401,7 +211,7 @@
     )
   )
 
-  (func $fft (param $n i32) (param $inverse f64)
+  (func $fft_c2c (param $n i32) (param $inverse f64)
 
     (local $log_n i32)
 
@@ -453,7 +263,7 @@
 
 
     ;; (local.set $t0 (call $now))
-    (call $fftPermute (local.get $n) (local.get $log_n))
+    (call $fft_permute_c (local.get $n) (local.get $log_n))
     ;; (local.set $delta
     ;;   (f64.sub
     ;;     (call $now)
@@ -625,14 +435,11 @@
     )
   )
 
-  (export "exp" (func $exp))
-  (export "sin_f64" (func $sin_f64))
-  (export "cos_f64" (func $cos_f64))
-  (export "reverseBits" (func $reverseBits))
-  (export "shiftBit" (func $shiftBit))
-  (export "shiftReverse" (func $shiftReverse))
-  (export "fftPermute" (func $fftPermute))
+  (export "reverse_bits" (func $reverse_bits))
+  (export "shift_bit" (func $shift_bit))
+  (export "shift_reverse" (func $shift_reverse))
+  (export "fft_permute_c" (func $fft_permute_c))
   (export "complex_mul_re" (func $complex_mul_re))
   (export "complex_mul_im" (func $complex_mul_im))
-  (export "fft" (func $fft))
+  (export "fft_c2c" (func $fft_c2c))
 )
