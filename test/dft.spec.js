@@ -36,8 +36,9 @@ before(function () {
   var testVecFilePath = path.join(dataDir, 'test_vectors.json')
   testVectors = JSON.parse(fs.readFileSync(testVecFilePath))
   sizes = Object.keys(testVectors['complex'])
-  // sizes = [8]
+  sizes = [8]
   sizes2D = Object.keys(testVectors['2d']['complex'])
+  sizes2D = [8]
   // sizes = [8, 32, 512, 2048, 8192]
 })
 
@@ -91,6 +92,8 @@ describe('fftComplex2Complex', function () {
 
       var t0 = performance.now()
       dft.fftComplex2Complex(input, testFFT, false)
+      testFFT.print()
+      expected.print()
       var delta = (performance.now() - t0)/1000
       // console.log(`fftComplex2Complex: ${delta} sec`)
       for (var i=0; i<input.size; i++) {
@@ -142,18 +145,27 @@ describe('fftComplex2Complex', function () {
 //   })
 // })
 
-// describe.skip('fftComplex2Complex2d', function () {
-//   it('should produce the same results as test vectors', function () {
-//     sizes2D.forEach(n => {
-//       var input = testVectors['2d']['complex'][n]['in']
-//       var expected = testVectors['2d']['complex'][n]['out']
-//       var test = dft.fftComplex2Complex2d(input)
-//       for (var r=0; r<test.length; r++ ){
-//         for (var c=0; c<test[0].length; c++) {
-//           // console.log(`test[${r}][${c}]: ${test[r][c]}, expected[${r}][${c}]: ${expected[r][c]}`)
-//           assert.equal(allClose(test[r][c], expected[r][c], {atol:1e-5,rtol:1e-3}), true)
-//         }
-//       }
-//     })
-//   })
-// })
+describe('fftComplex2Complex2d', function () {
+  it('should produce the same results as test vectors', function () {
+    sizes2D.forEach(n => {
+      // var input = new NDArray([n,n,2], {array: testVectors['2d']['complex'][n]['in']})
+      // var expected = new NDArray([n,n,2], {array: testVectors['2d']['complex'][n]['out']})
+      var input = testVectors['2d']['complex'][n]['in']
+      input = input.reduce((accum, val)=>{return accum.concat(val)}, [])
+
+      var expected = testVectors['2d']['complex'][n]['out']
+      expected = expected.reduce((accum, val)=>{return accum.concat(val)}, [])
+
+      var input = new NDArray([n,n,2], {array: input})
+      var expected = new NDArray([n,n,2], {array: expected})
+      var testFFT = new NDArray([n,n,2])
+      testFFT._array.fill(0.0)
+      dft.fftComplex2Complex2d(input, testFFT, false)
+
+      for (var i=0; i<testFFT.size; i++) {
+        var close = allClose(testFFT._array[i], expected._array[i], {atol:1e-5,rtol:1e-3})
+        assert.equal(close, true)
+      }          // console.log(`test[${r}][${c}]: ${test[r][c]}, expected[${r}][${c}]: ${expected[r][c]}`)
+    })
+  })
+})

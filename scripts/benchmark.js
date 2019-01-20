@@ -1,10 +1,12 @@
-const fftBenchmark = function (nIter, testFunctions, testVectors, testSizes, now, NDArray) {
+const fftBenchmark = function (nIter, testFunctions, testVectors, returnVectors, testSizes, now, NDArray) {
   var report = {'nIter': nIter}
   testFunctions.forEach((f, idx) => {
     report[f.name] = {}
     testSizes.forEach(n => {
-      var x = new NDArray([2*n], {array: testVectors[n]['in']})
-      var y = new NDArray([2*n])
+      var x = testVectors[n]
+      // var y = returnVectors[n]
+      var x = new NDArray([n,2])
+      var y = new NDArray([n,2])
       var t0 = now()
       for (var i=0; i<nIter; i++) {
         f(x, y)
