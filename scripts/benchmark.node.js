@@ -68,7 +68,9 @@ const fftBenchmark1d = function (nIter, testVectors, testSizes, now) {
     //   return accum.concat(val)
     // }, [])
     // var x = new NDArray([n,2], {array: x})
-    var x = testVectors[n]
+    // var x = testVectors[n]
+    var x = new NDArray([n,2])
+    x._array.fill(0.0)
     var y = new NDArray([n,2])
     var t0 = now()
     for (var i=0; i<nIter; i++) {
@@ -90,6 +92,8 @@ const fftBenchmark2d = function (nIter, testVectors, testSizes, now) {
     // }, [])
     // var x = new NDArray([n,2], {array: x})
     var x = testVectors[n]
+    var x = new NDArray([n,n,2])
+    x._array.fill(0.0)
     var y = new NDArray([n,n,2])
     var t0 = now()
     for (var i=0; i<nIter; i++) {
@@ -106,27 +110,27 @@ const fftBenchmark2d = function (nIter, testVectors, testSizes, now) {
 // }
 
 if (typeof require != 'undefined' && require.main == module) {
-  var report = ndarrayBenchmark(2000, performance.now)
-  benchmark.formatReport(report)
-  var testVectors = loadTestVectors()
-  var fftComplex2Complex = function (x, y) {
-    return dft.fftComplex2Complex(x, y, false)
-  }
+  // var report = ndarrayBenchmark(2000, performance.now)
+  // benchmark.formatReport(report)
+  // var testVectors = loadTestVectors()
+  // var fftComplex2Complex = function (x, y) {
+  //   return dft.fftComplex2Complex(x, y, false)
+  // }
   var testVectors1d = {}
   // var returnVectors1d = {}
-  Object.keys(testVectors['complex']).forEach((n) => {
-    testVectors1d[n] = new NDArray([n,2], {array: testVectors['complex'][n]['in']})
-    // returnVectors1d[n] = new NDArray([n,2])
-  })
+  // Object.keys(testVectors['complex']).forEach((n) => {
+  //   testVectors1d[n] = new NDArray([n,2], {array: testVectors['complex'][n]['in']})
+  //   // returnVectors1d[n] = new NDArray([n,2])
+  // })
 
   var testVectors2d = {}
   // var returnVectors2d = {}
-  Object.keys(testVectors['2d']['complex']).forEach((n) => {
-    var arr = testVectors['2d']['complex'][n]['in']
-    arr.reduce((accum, val) => {return accum.concat(val)},[])
-    testVectors2d[n] = new NDArray([n,n,2], {array: arr})
-    // returnVectors2d[n] = new NDArray([n,n,2])
-  })
+  // Object.keys(testVectors['2d']['complex']).forEach((n) => {
+  //   var arr = testVectors['2d']['complex'][n]['in']
+  //   arr.reduce((accum, val) => {return accum.concat(val)},[])
+  //   testVectors2d[n] = new NDArray([n,n,2], {array: arr})
+  //   // returnVectors2d[n] = new NDArray([n,n,2])
+  // })
 
 
   var report = fftBenchmark1d(
@@ -143,11 +147,11 @@ if (typeof require != 'undefined' && require.main == module) {
     return dft.fftComplex2Complex2d(x, y, false)
   }
   var report = fftBenchmark2d(
-    1,
+    2000,
     // [fftComplex2Complex2d],
     testVectors2d,
     // returnVectors2d,
-    [8, 32, 128],
+    [256],
     performance.now,
     // NDArray
   )
