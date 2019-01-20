@@ -5,8 +5,8 @@ const { performance } = require('perf_hooks')
 
 const Complex = require('complex.js')
 
+const { NDArray } = require('../src/ndarray.js')
 const dft = require('./../src/dft.js')
-const { NDArray } = require('./../src/ndarray.js')
 
 const topDir = path.dirname(__dirname)
 const dataDir = path.join(__dirname, 'data')
@@ -36,47 +36,47 @@ before(function () {
   var testVecFilePath = path.join(dataDir, 'test_vectors.json')
   testVectors = JSON.parse(fs.readFileSync(testVecFilePath))
   sizes = Object.keys(testVectors['complex'])
-  sizes = [8]
+  // sizes = [8]
   sizes2D = Object.keys(testVectors['2d']['complex'])
   // sizes = [8, 32, 512, 2048, 8192]
 })
 
-describe.skip('fftReal2Complex', function () {
-  it('should produce the same results as test vectors', function () {
-    this.timeout(5000)
-    sizes.forEach((n) => {
-      var inputReal = testVectors['real'][n]['in']
-      var expected = testVectors['real'][n]['out']
-      var t0 = performance.now()
-      var testFFT = dft.fftReal2Complex(inputReal, false)
-      var delta = (performance.now() - t0)/1000
-      // console.log(`fftReal2Complex: ${delta} sec`)
-      for (var i=0; i<2*n; i++) {
-        var delta = Math.abs(testFFT[i] - expected[i])
-        assert.equal(delta < thresh, true)
-      }
-    })
-  })
-  it('should reproduce input', function () {
-    this.timeout(5000)
-    sizes.forEach((n) => {
-      var inputReal = testVectors['real'][n]['in']
-      var t0 = performance.now()
-      var forwardFFT = dft.fftReal2Complex(inputReal, false)
-      var delta = (performance.now() - t0)/1000
-      // console.log(`fftReal2Complex (forward): ${delta} sec`)
-      var t0 = performance.now()
-      var backwardFFT = dft.fftComplex2Complex(forwardFFT, true)
-      var delta = (performance.now() - t0)/1000
-
-      // console.log(`fftReal2Complex (backward): ${delta} sec`)
-      for (var i=0; i<n; i++) {
-        var delta = Math.abs(backwardFFT[2*i] - inputReal[i])
-        assert.equal(delta < thresh, true)
-      }
-    })
-  })
-})
+// describe.skip('fftReal2Complex', function () {
+//   it('should produce the same results as test vectors', function () {
+//     this.timeout(5000)
+//     sizes.forEach((n) => {
+//       var inputReal = testVectors['real'][n]['in']
+//       var expected = testVectors['real'][n]['out']
+//       var t0 = performance.now()
+//       var testFFT = dft.fftReal2Complex(inputReal, false)
+//       var delta = (performance.now() - t0)/1000
+//       // console.log(`fftReal2Complex: ${delta} sec`)
+//       for (var i=0; i<2*n; i++) {
+//         var delta = Math.abs(testFFT[i] - expected[i])
+//         assert.equal(delta < thresh, true)
+//       }
+//     })
+//   })
+//   it('should reproduce input', function () {
+//     this.timeout(5000)
+//     sizes.forEach((n) => {
+//       var inputReal = testVectors['real'][n]['in']
+//       var t0 = performance.now()
+//       var forwardFFT = dft.fftReal2Complex(inputReal, false)
+//       var delta = (performance.now() - t0)/1000
+//       // console.log(`fftReal2Complex (forward): ${delta} sec`)
+//       var t0 = performance.now()
+//       var backwardFFT = dft.fftComplex2Complex(forwardFFT, true)
+//       var delta = (performance.now() - t0)/1000
+//
+//       // console.log(`fftReal2Complex (backward): ${delta} sec`)
+//       for (var i=0; i<n; i++) {
+//         var delta = Math.abs(backwardFFT[2*i] - inputReal[i])
+//         assert.equal(delta < thresh, true)
+//       }
+//     })
+//   })
+// })
 
 describe('fftComplex2Complex', function () {
   it('should produce the same results as test vectors', function () {
@@ -94,29 +94,31 @@ describe('fftComplex2Complex', function () {
       var delta = (performance.now() - t0)/1000
       // console.log(`fftComplex2Complex: ${delta} sec`)
       for (var i=0; i<input.size; i++) {
-        var delta = allClose(testFFT._array[i], expected._array[i])
-        assert.equal(delta < thresh, true)
+        var close = allClose(testFFT._array[i], expected._array[i])
+        assert.equal(close, true)
       }
     })
   })
-  // it('should reproduce input', function () {
-  //   this.timeout(5000)
-  //   sizes.forEach((n) => {
-  //     var input = testVectors['complex'][n]['in']
-  //     var t0 = performance.now()
-  //     var forwardFFT = dft.fftComplex2Complex(input, false)
-  //     var delta = (performance.now() - t0)/1000
-  //     // console.log(`fftComplex2Complex (forward): ${delta} sec`)
-  //     var t0 = performance.now()
-  //     var backwardFFT = dft.fftComplex2Complex(forwardFFT, true)
-  //     var delta = (performance.now() - t0)/1000
-  //     // console.log(`fftComplex2Complex (backward): ${delta} sec`)
-  //     for (var i=0; i<2*n; i++) {
-  //       var delta = Math.abs(backwardFFT[i] - input[i])
-  //       assert.equal(delta < thresh, true)
-  //     }
-  //   })
-  // })
+  it('should reproduce input', function () {
+    this.timeout(5000)
+    sizes.forEach((n) => {
+      var input = new NDArray([n, 2], {array:testVectors['complex'][n]['in']})
+      var forwardFFT = new NDArray([n, 2])
+      var backwardFFT = new NDArray([n, 2])
+      var t0 = performance.now()
+      var forwardFFT = dft.fftComplex2Complex(input, forwardFFT, false)
+      var delta = (performance.now() - t0)/1000
+      // console.log(`fftComplex2Complex (forward): ${delta} sec`)
+      var t0 = performance.now()
+      var backwardFFT = dft.fftComplex2Complex(forwardFFT, backwardFFT, true)
+      var delta = (performance.now() - t0)/1000
+      // console.log(`fftComplex2Complex (backward): ${delta} sec`)
+      for (var i=0; i<2*n; i++) {
+        var close = allClose(input._array[i], backwardFFT._array[i])
+        assert.equal(close, true)
+      }
+    })
+  })
 })
 
 // describe('transposeComplex', function () {

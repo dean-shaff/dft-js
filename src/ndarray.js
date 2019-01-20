@@ -46,11 +46,25 @@ function NDArray (shape, _options){
   }
 
   this.get = function (access) {
-    return this._array[this._calc_idx(access)]
+    var idx = this._offset
+    // var orderIdx;
+    for (var i=0; i<this.ndim; i++){
+      // orderIdx = this._order[i]
+      idx += this._strides[i]*access[i]
+    }
+    return this._array[idx]
+    // return this._array[this._calc_idx(access)]
   }
 
   this.set = function (access, val) {
-    this._array[this._calc_idx(access)] = val
+    var idx = this._offset
+    // var orderIdx;
+    for (var i=0; i<this.ndim; i++){
+      // orderIdx = this._order[i]
+      idx += this._strides[i]*access[i]
+    }
+    this._array[idx] = val
+    // this._array[this._calc_idx(access)] = val
   }
 
   this.fill = function (val) {
