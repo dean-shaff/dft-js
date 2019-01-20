@@ -28,20 +28,34 @@ const complexMul = function (re0, im0, re1, im1) {
   ]
 }
 
-const fftPermuteComplex = function (x, res) {
-  var n = x.shape[0]
-  var log_n = Math.log2(n)
+const fftPermuteComplex = function (x, res, _options) {
+
+  // var n = x.shape[0]
+  var n = x.length / 2
   var idx, idxOffset
 
-  var resOffset = res._offset
-  var resStride = res._strides[0] / 2
+  var options = {
+    'offset': 0,
+    'stride': 0,
+    'n': n
+  }
+  if (_options !== undefined) {
+    options = Object.assign(options, _options)
+  }
+  n = options.n
+  var log_n = Math.log2(n)
+  var arrOffset = options.offset
+  var arrStride = options.stride
 
   for (var i=0; i<n; i++) {
     idx = shiftBit(reverseBits(i), log_n)
     // res.set([2*i], x.get([2*idx]))
     // res.set([2*i + 1], x.get([2*idx + 1]))
-    res._array[resOffset + resStride*2*i] = x._array[resOffset + resStride*2*idx]
-    res._array[resOffset + resStride*2*i + 1] = x._array[resOffset + resStride*2*idx + 1]
+    // res._array[arrOffset + arrStride*2*i] = x._array[arrOffset + arrStride*2*idx]
+    // res._array[arrOffset + arrStride*2*i + 1] = x._array[arrOffset + arrStride*2*idx + 1]
+    res[arrOffset + arrStride*2*i] = x[arrOffset + arrStride*2*idx]
+    res[arrOffset + arrStride*2*i + 1] = x[arrOffset + arrStride*2*idx + 1]
+
   }
 }
 
@@ -53,17 +67,26 @@ const fftPermuteComplex = function (x, res) {
  * @param  {[type]} inverse [description]
  * @return {[type]}         [description]
  */
-const fftComplex2Complex = function (x, res, inverse) {
+const fftComplex2Complex = function (x, res, inverse, _options) {
     if (inverse === undefined) {
       inverse = false
     }
     inverse = inverse ? 1: -1
 
-    var n = x.shape[0]
-    var log_n = Math.log2(n)
+    // var n = x.shape[0]
+    var n = x.length / 2
+
+    var options = {
+      'offset': 0,
+      'stride': 1,
+      'n':n
+    }
+    if (_options !== undefined) {
+      options = Object.assign(options, _options)
+    }
 
     // var t0 = performance.now()
-    fftPermuteComplex(x, res)
+    fftPermuteComplex(x, res, options)
     // var delta = (performance.now() - t0) / 1000
     // console.log(`fftPermuteComplex took ${delta} seconds`)
 
@@ -72,8 +95,13 @@ const fftComplex2Complex = function (x, res, inverse) {
         even_re, even_im, odd_re, odd_im, c,
         k_offset, k_offset_incr_2
 
-    var resOffset = res._offset
-    var resStride = res._strides[0] / 2
+    n = options.n
+    var log_n = Math.log2(n)
+    var arrOffset = options.offset
+    var arrStride = options.stride
+    console.log(n, log_n, arrOffset, arrStride)
+    // var resOffset = res._offset
+    // var resStride = res._strides[0] / 2
 
     for (var p = 1; p <= log_n; p++) {
       incr = 0x1 << p
@@ -85,17 +113,24 @@ const fftComplex2Complex = function (x, res, inverse) {
         omega_re = 1.0
         omega_im = 0.0
         for (var k = 0; k < incr/2; k++) {
-          k_offset = resOffset + resStride*2*(offset + k)
-          k_offset_incr_2 = resOffset + resStride*2*(offset + k + incr/2)
+          k_offset = arrOffset + arrStride*2*(offset + k)
+          k_offset_incr_2 = arrOffset + arrStride*2*(offset + k + incr/2)
           // var t0 = performance.now()
           // even_re = res.get([2*(offset + k)])
           // even_im = res.get([2*(offset + k) + 1])
           // odd_re = res.get([2*(offset + k + incr/2)])
           // odd_im = res.get([2*(offset + k + incr/2) + 1])
-          even_re = res._array[k_offset]
-          even_im = res._array[k_offset + 1 ]
-          odd_re = res._array[k_offset_incr_2]
-          odd_im = res._array[k_offset_incr_2 + 1]
+          // even_re = res._array[k_offset]
+          // even_im = res._array[k_offset + 1 ]
+          // odd_re = res._array[k_offset_incr_2]
+          // odd_im = res._array[k_offset_incr_2 + 1]
+
+          even_re = res[k_offset]
+          even_im = res[k_offset + 1 ]
+          odd_re = res[k_offset_incr_2]
+          odd_im = res[k_offset_incr_2 + 1]
+
+
 
           c = complexMul(
             odd_re, odd_im, omega_re, omega_im)
@@ -112,10 +147,15 @@ const fftComplex2Complex = function (x, res, inverse) {
           // res.set([2*(offset + k + incr/2)], even_re - odd_re)
           // res.set([2*(offset + k + incr/2) + 1], even_im - odd_im)
 
-          res._array[k_offset] = even_re + odd_re
-          res._array[k_offset + 1] = even_im + odd_im
-          res._array[k_offset_incr_2] = even_re - odd_re
-          res._array[k_offset_incr_2 + 1] = even_im - odd_im
+          // res._array[k_offset] = even_re + odd_re
+          // res._array[k_offset + 1] = even_im + odd_im
+          // res._array[k_offset_incr_2] = even_re - odd_re
+          // res._array[k_offset_incr_2 + 1] = even_im - odd_im
+
+          res[k_offset] = even_re + odd_re
+          res[k_offset + 1] = even_im + odd_im
+          res[k_offset_incr_2] = even_re - odd_re
+          res[k_offset_incr_2 + 1] = even_im - odd_im
 
           // var delta = (performance.now() - t0) / 1000
           // console.log(`inner loop took ${delta} seconds`)
@@ -129,14 +169,25 @@ const fftComplex2Complex = function (x, res, inverse) {
         res.set([i, 1], res.get([i, 1]) / n)
       }
     }
-    return res
+    // return res
 }
 
-const fftComplex2Complex2d = function (x, res, inverse) {
+const fftComplex2Complex2d = function (x, res, shape, inverse) {
 
   // var t0 = performance.now()
-  for (var i=0; i<x.shape[0]; i++) {
-    fftComplex2Complex(x.view(0, i), res.view(0, i), inverse)
+  var n = shape[0]
+  var m = shape[1]
+
+  var options = {
+    'offset': 0,
+    'stride': 1,
+    'n': n
+  }
+
+  for (var i=0; i<n; i++) {
+    options.offset = 2 * n * i
+    fftComplex2Complex(x, res, inverse, options)
+    // fftComplex2Complex(x.view(0, i), res.view(0, i), inverse)
   }
   // var delta = (performance.now() - t0)/1000
   // console.log(`fftComplex2Complex2d (${x.shape}): fft on rows took ${delta} sec, ${delta/x.shape[0]} per fft`)
@@ -145,10 +196,16 @@ const fftComplex2Complex2d = function (x, res, inverse) {
   // res = transposeComplex(res)
   // var delta = (performance.now() - t0)/1000
   // console.log(`fftComplex2Complex2d: transpose (0) took ${delta} sec`)
-  var resIntermediate = new NDArray(x.shape, {array: res._array.slice(0)})
+  // var resIntermediate = new NDArray(x.shape, {array: res._array.slice(0)})
+  var resIntermediate = res.slice(0)
   // var t0 = performance.now()
-  for (var i=0; i<x.shape[1]; i++) {
-    fftComplex2Complex(resIntermediate.view(1, i), res.view(1, i), inverse)
+  options.offset = 0
+  options.stride = m
+  options.n = m
+  for (var i=0; i<m; i++) {
+    options.offset = 2 * i
+    // fftComplex2Complex(resIntermediate.view(1, i), res.view(1, i), inverse)
+    fftComplex2Complex(resIntermediate, res, inverse, options)
     // res[i] = fftComplex2Complex(res[i], inverse)
   }
   // var delta = (performance.now() - t0)/1000

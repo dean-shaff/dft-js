@@ -74,7 +74,7 @@ const fftBenchmark1d = function (nIter, testVectors, testSizes, now) {
     var y = new NDArray([n,2])
     var t0 = now()
     for (var i=0; i<nIter; i++) {
-      dft.fftComplex2Complex(x, y, false)
+      dft.fftComplex2Complex(x._array, y._array, [n, n], false)
     }
     var delta = now() - t0
     report['fftComplex2Complex'][n] = delta
@@ -97,7 +97,7 @@ const fftBenchmark2d = function (nIter, testVectors, testSizes, now) {
     var y = new NDArray([n,n,2])
     var t0 = now()
     for (var i=0; i<nIter; i++) {
-      dft.fftComplex2Complex2d(x, y, false)
+      dft.fftComplex2Complex2d(x._array, y._array, false)
     }
     var delta = now() - t0
     report['fftComplex2Complex2d'][n] = delta
@@ -133,19 +133,20 @@ if (typeof require != 'undefined' && require.main == module) {
   // })
 
 
-  var report = fftBenchmark1d(
-    2000,
-    // [fftComplex2Complex],
-    testVectors1d,
-    // returnVectors1d,
-    [32, 512, 2048],
-    performance.now,
-    // NDArray
-  )
-  benchmark.formatReport(report)
-  var fftComplex2Complex2d = function(x, y) {
-    return dft.fftComplex2Complex2d(x, y, false)
-  }
+  // var report = fftBenchmark1d(
+  //   2000,
+  //   // [fftComplex2Complex],
+  //   testVectors1d,
+  //   // returnVectors1d,
+  //   [32, 512, 2048],
+  //   performance.now,
+  //   // NDArray
+  // )
+  // benchmark.formatReport(report)
+
+  // var fftComplex2Complex2d = function(x, y) {
+  //   return dft.fftComplex2Complex2d(x, y, false)
+  // }
   var report = fftBenchmark2d(
     2000,
     // [fftComplex2Complex2d],

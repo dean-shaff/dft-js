@@ -434,7 +434,8 @@
       ) ;; loop for (var p = 1; p <= log_n; p++)
     )
   )
-
+  ;; (func $fft2d_c2c )
+  
   (export "reverse_bits" (func $reverse_bits))
   (export "shift_bit" (func $shift_bit))
   (export "shift_reverse" (func $shift_reverse))
