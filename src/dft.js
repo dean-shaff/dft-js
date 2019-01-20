@@ -62,10 +62,10 @@ const fftComplex2Complex = function (x, res, inverse) {
     var n = x.shape[0]
     var log_n = Math.log2(n)
 
-    // var t0 = performance.now()
+    var t0 = performance.now()
     fftPermuteComplex(x, res)
-    // var delta = (performance.now() - t0) / 1000
-    // console.log(`fftPermuteComplex took ${delta} seconds`)
+    var delta = (performance.now() - t0) / 1000
+    console.log(`fftPermuteComplex took ${delta} seconds`)
 
     var incr, theta, theta_exp_re,
         theta_exp_im, omega_re, omega_im,
@@ -138,21 +138,21 @@ const fftComplex2Complex2d = function (x, res, inverse) {
   for (var i=0; i<x.shape[0]; i++) {
     fftComplex2Complex(x.view(0, i), res.view(0, i), inverse)
   }
-  // var delta = (performance.now() - t0)/1000
-  // console.log(`fftComplex2Complex2d: fft on rows took ${delta} sec`)
+  var delta = (performance.now() - t0)/1000
+  console.log(`fftComplex2Complex2d (${x.shape}): fft on rows took ${delta} sec, ${delta/x.shape[0]} per fft`)
 
   // var t0 = performance.now()
   // res = transposeComplex(res)
   // var delta = (performance.now() - t0)/1000
   // console.log(`fftComplex2Complex2d: transpose (0) took ${delta} sec`)
-  var t0 = performance.now()
   var resIntermediate = new NDArray(x.shape, {array: res._array.slice(0)})
+  var t0 = performance.now()
   for (var i=0; i<x.shape[1]; i++) {
     fftComplex2Complex(resIntermediate.view(1, i), res.view(1, i), inverse)
     // res[i] = fftComplex2Complex(res[i], inverse)
   }
-  // var delta = (performance.now() - t0)/1000
-  // console.log(`fftComplex2Complex2d: fft on cols took ${delta} sec`)
+  var delta = (performance.now() - t0)/1000
+  console.log(`fftComplex2Complex2d (${x.shape}): fft on cols took ${delta} sec, ${delta/x.shape[1]} per fft`)
 
   // var t0 = performance.now()
   // res = transposeComplex(res)
