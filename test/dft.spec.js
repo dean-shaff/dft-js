@@ -91,7 +91,7 @@ describe('fftComplex2Complex', function () {
       var testFFT = new NDArray([n, 2])
 
       var t0 = performance.now()
-      dft.fftComplex2Complex(input._array, testFFT._array, false)
+      dft.fftComplex2Complex(input._array, testFFT._array, false, n, 0, 1)
       testFFT.print()
       expected.print()
       var delta = (performance.now() - t0)/1000

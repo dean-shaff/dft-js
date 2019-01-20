@@ -28,24 +28,11 @@ const complexMul = function (re0, im0, re1, im1) {
   ]
 }
 
-const fftPermuteComplex = function (x, res, _options) {
+const fftPermuteComplex = function (x, res, n, arrOffset, arrStride) {
 
-  // var n = x.shape[0]
-  var n = x.length / 2
   var idx, idxOffset
 
-  var options = {
-    'offset': 0,
-    'stride': 0,
-    'n': n
-  }
-  if (_options !== undefined) {
-    options = Object.assign(options, _options)
-  }
-  n = options.n
   var log_n = Math.log2(n)
-  var arrOffset = options.offset
-  var arrStride = options.stride
 
   for (var i=0; i<n; i++) {
     idx = shiftBit(reverseBits(i), log_n)
@@ -67,26 +54,16 @@ const fftPermuteComplex = function (x, res, _options) {
  * @param  {[type]} inverse [description]
  * @return {[type]}         [description]
  */
-const fftComplex2Complex = function (x, res, inverse, _options) {
+const fftComplex2Complex = function (x, res, inverse, n, arrOffset, arrStride) {
     if (inverse === undefined) {
       inverse = false
     }
     inverse = inverse ? 1: -1
 
-    // var n = x.shape[0]
-    var n = x.length / 2
-
-    var options = {
-      'offset': 0,
-      'stride': 1,
-      'n':n
-    }
-    if (_options !== undefined) {
-      options = Object.assign(options, _options)
-    }
+    var log_n = Math.log2(n)
 
     // var t0 = performance.now()
-    fftPermuteComplex(x, res, options)
+    fftPermuteComplex(x, res, n, arrOffset, arrStride)
     // var delta = (performance.now() - t0) / 1000
     // console.log(`fftPermuteComplex took ${delta} seconds`)
 
@@ -95,11 +72,7 @@ const fftComplex2Complex = function (x, res, inverse, _options) {
         even_re, even_im, odd_re, odd_im, c,
         k_offset, k_offset_incr_2
 
-    n = options.n
-    var log_n = Math.log2(n)
-    var arrOffset = options.offset
-    var arrStride = options.stride
-    console.log(n, log_n, arrOffset, arrStride)
+    // console.log(n, log_n, arrOffset, arrStride)
     // var resOffset = res._offset
     // var resStride = res._strides[0] / 2
 
@@ -185,8 +158,7 @@ const fftComplex2Complex2d = function (x, res, shape, inverse) {
   }
 
   for (var i=0; i<n; i++) {
-    options.offset = 2 * n * i
-    fftComplex2Complex(x, res, inverse, options)
+    fftComplex2Complex(x, res, inverse, n, 2*n*i, 1)
     // fftComplex2Complex(x.view(0, i), res.view(0, i), inverse)
   }
   // var delta = (performance.now() - t0)/1000
@@ -199,13 +171,9 @@ const fftComplex2Complex2d = function (x, res, shape, inverse) {
   // var resIntermediate = new NDArray(x.shape, {array: res._array.slice(0)})
   var resIntermediate = res.slice(0)
   // var t0 = performance.now()
-  options.offset = 0
-  options.stride = m
-  options.n = m
   for (var i=0; i<m; i++) {
-    options.offset = 2 * i
     // fftComplex2Complex(resIntermediate.view(1, i), res.view(1, i), inverse)
-    fftComplex2Complex(resIntermediate, res, inverse, options)
+    fftComplex2Complex(resIntermediate, res, inverse, m, 2*i, m)
     // res[i] = fftComplex2Complex(res[i], inverse)
   }
   // var delta = (performance.now() - t0)/1000
