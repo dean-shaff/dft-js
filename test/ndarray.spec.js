@@ -39,7 +39,16 @@ describe('NDArray', function () {
   })
 
   describe('set', function () {
-
+    it('should set array elements', function () {
+      for (var i=0; i<arr3d.shape[0]; i++) {
+        for (var j=0; j<arr3d.shape[1]; j++) {
+          for (var k=0; k<arr3d.shape[2]; k++) {
+            arr3d.set([i, j, k], 0.0)
+          }
+        }
+      }
+      assert.deepEqual(arr3d._array, new Array(arr3d.size).fill(0))
+    })
   })
 
   describe('transpose', function () {
@@ -152,11 +161,18 @@ describe('NDArray', function () {
         test.push(view.get([i]))
       }
       assert.deepEqual(test, expected)
-
-
     })
     it('calling set on view should change parent array', function() {
-
+      view = arr3d.view(0, 0)
+      for (var i=0; i < view.shape[0]; i++) {
+        for (var j=0; j < view.shape[1]; j++ ) {
+          view.set([i, j], 0.0)
+        }
+      }
+      assert.deepEqual(
+        arr3d._array.slice(0, view.size),
+        new Array(view.size).fill(0.0)
+      )
     })
   })
 

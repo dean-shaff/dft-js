@@ -11,12 +11,6 @@ function NDArray (shape, _options){
   // do each of the keys in options manually because we don't want to
   // allocate anything we don't absolutely have to.
 
-  // if ('order' in options) {
-  //   this._order = options.order
-  // } else {
-  //   this._order = Array.from(Array(this.ndim).keys())
-  // }
-
   if ('strides' in options) {
     this._strides = options.strides
   } else {
@@ -123,10 +117,27 @@ function NDArray (shape, _options){
       return val.toFixed(decimalPlaces)
     }
 
+    const formatArr1D = (arr) => {
+      var arrStr = arr.data().map(x=>format(x))
+      return '[ ' + arrStr.join(', ') + ' ]'
+    }
+
     const _print = (x) => {
       if (x.ndim == 1) {
-        var xStr = x.data().map(x=>format(x))
-        console.log('[ ' + xStr.join(', ') + ' ]')
+        console.log(formatArr1D(x))
+      } else if (x.ndim == 2) {
+        var arrStr = ['[']
+        for (var i=0; i<x.shape[0]; i++) {
+          if (i != 0) {
+            arrStr.push(' ')
+          }
+          arrStr.push(formatArr1D(x.view(0, i)))
+          if (i != x.shape[0] - 1) {
+            arrStr.push('\n')
+          }
+        }
+        arrStr.push(']')
+        console.log(arrStr.join('') + '\n')
       } else {
         for (var i=0; i<x.shape[0]; i++) {
           _print(x.view(0, i))
