@@ -160,7 +160,7 @@ describe('fftComplex2Complex2d', function () {
       var expected = new NDArray([n,n,2], {array: expected})
       var testFFT = new NDArray([n,n,2])
       testFFT._array.fill(0.0)
-      dft.fftComplex2Complex2d(input._array, testFFT._array,[n,n],false)
+      dft.fftComplex2Complex2d(input._array, testFFT._array, [n,n], false)
       expected.print()
       testFFT.print()
       for (var i=0; i<testFFT.size; i++) {

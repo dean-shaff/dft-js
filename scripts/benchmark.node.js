@@ -138,7 +138,7 @@ if (typeof require != 'undefined' && require.main == module) {
     // [fftComplex2Complex],
     testVectors1d,
     // returnVectors1d,
-    [512, 2048],
+    [32, 512, 2048],
     performance.now,
     // NDArray
   )
@@ -148,11 +148,11 @@ if (typeof require != 'undefined' && require.main == module) {
   //   return dft.fftComplex2Complex2d(x, y, false)
   // }
   var report = fftBenchmark2d(
-    100,
+    2000,
     // [fftComplex2Complex2d],
     testVectors2d,
     // returnVectors2d,
-    [8, 32, 128],
+    [8, 32, 128, 256],
     performance.now,
     // NDArray
   )
