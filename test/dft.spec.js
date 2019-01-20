@@ -134,7 +134,7 @@ describe.skip('transposeReal', function () {
   })
 })
 
-describe('fftComplex2Complex2d', function () {
+describe.skip('fftComplex2Complex2d', function () {
   it('should produce the same results as test vectors', function () {
     sizes2D.forEach(n => {
       var input = testVectors['2d']['complex'][n]['in']

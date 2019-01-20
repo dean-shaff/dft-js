@@ -207,19 +207,23 @@ const fftComplex2Complex2d = function (x, inverse) {
   var res = new Array(x.length)
   // var t0 = performance.now()
   for (var i=0; i<x.length; i++) {
+    var get = (j, c) => {return x.get([i, j, c])}
+    var set = (j, c, val) => {return x.set([i, j, c , val])}
     res[i] = fftComplex2Complex(x[i], inverse)
   }
   // var delta = (performance.now() - t0)/1000
   // console.log(`fftComplex2Complex2d: fft on rows took ${delta} sec`)
 
   // var t0 = performance.now()
-  res = transposeComplex(res)
+  // res = transposeComplex(res)
   // var delta = (performance.now() - t0)/1000
   // console.log(`fftComplex2Complex2d: transpose (0) took ${delta} sec`)
 
 
   // var t0 = performance.now()
   for (var i=0; i<res.length; i++) {
+    var get = (j, c) => {return x.get([j, i, c])}
+    var set = (j, c, val) => {return x.set([j, i, c, val])}
     res[i] = fftComplex2Complex(res[i], inverse)
   }
   // var delta = (performance.now() - t0)/1000
@@ -232,6 +236,37 @@ const fftComplex2Complex2d = function (x, inverse) {
 
   return res
 }
+
+
+// const fftComplex2Complex2d = function (x, inverse) {
+//   var res = new Array(x.length)
+//   // var t0 = performance.now()
+//   for (var i=0; i<x.length; i++) {
+//     res[i] = fftComplex2Complex(x[i], inverse)
+//   }
+//   // var delta = (performance.now() - t0)/1000
+//   // console.log(`fftComplex2Complex2d: fft on rows took ${delta} sec`)
+//
+//   // var t0 = performance.now()
+//   res = transposeComplex(res)
+//   // var delta = (performance.now() - t0)/1000
+//   // console.log(`fftComplex2Complex2d: transpose (0) took ${delta} sec`)
+//
+//
+//   // var t0 = performance.now()
+//   for (var i=0; i<res.length; i++) {
+//     res[i] = fftComplex2Complex(res[i], inverse)
+//   }
+//   // var delta = (performance.now() - t0)/1000
+//   // console.log(`fftComplex2Complex2d: fft on cols took ${delta} sec`)
+//
+//   // var t0 = performance.now()
+//   res = transposeComplex(res)
+//   // var delta = (performance.now() - t0)/1000
+//   // console.log(`fftComplex2Complex2d: transpose (1) took ${delta} sec`)
+//
+//   return res
+// }
 
 exports.shiftBit = shiftBit
 exports.reverseBits = reverseBits
